@@ -1,0 +1,51 @@
+---
+name: mman-vn
+description: "MMAN VN" for a Thailand import MMAN EDI manifest (fixed-width MMAN_*.txt). In one step it (1) keeps the PSKV header line, cuts every line after it up to the B/L the user names (e.g. HASLS21260801066) and keeps that B/L through the last line, then (2) applies Change status from a B/L list (.xls/.xlsx/.csv with B/L No., Status, POL): POL + copy of THBKK, shed code (0145 for B/Ls with a Status, 0122 for the rest), POL country code in place of TH, new container status (e.g. 8  N -> 9  N), PG -> PX. Writes output/MMAN_VN.txt. Use whenever the user says "mman vn", "ตัดและ change status", "ตัด MMAN ตั้งแต่ BL ...", "ทำ mman_vn", or points to a folder with input/ holding an MMAN_*.txt plus a status list and names a starting B/L.
+---
+
+# MMAN VN (ตัด + Change status → output/MMAN_VN.txt)
+
+Rattana's confirmed format. Run the bundled script; don't edit the file by hand. The file is
+fixed-width, latin-1 and CRLF. Never change line lengths or line endings (sed in Git Bash once
+broke CRLF).
+
+## Input
+
+- A folder with `input/` (or `Input/`) containing **1** `MMAN_*.txt` + **1** list file (`.xls`, `.xlsx`, `.csv`)
+- The **first B/L to keep**, given by the user (e.g. `HASLS21260801066`). If the user did not
+  give one, ask. Don't guess.
+- List file: only columns A-C are used, found **by header name** (B/L No., Status, POL in any
+  order, e.g. `SUR.xls` = POL, Status, B/L No.). Status blank = keep the original status.
+- If the list is a **PDF**, extract columns A-C into a CSV with the header `B/L No.,Status,POL`
+  (keep the spacing in Status, e.g. `9  N`) and put that CSV in `input/` instead.
+
+## What the script does
+
+1. **Cut**: keep line 1 (`PSKV…`), remove every line after it up to (not including) the line of
+   the given B/L, keep from that B/L to the last line. Bytes are copied as-is.
+2. **Change status** on the remaining B/Ls (0-based columns on each `HASL…` line):
+
+| # | Position | Value |
+|---|---|---|
+| 1 | col 35-39 | POL (from the list) |
+| 2 | col 40-44 | copy of #3 (always the same as THBKK) |
+| 3 | col 45-49 | THBKK from the original, unchanged |
+| 4 | col 50-53 | shed: `0145` if the B/L has a Status, otherwise `0122` (`--shed-yes/--shed-no` to change) |
+| 5 | col 843-844 | first 2 letters of POL (e.g. `VN`), replacing `TH` |
+| 6 | container line col 17 | Status from the list (`8  N` → `9  N`) |
+| – | package unit | `PG` → `PX` on every B/L |
+
+**Leave the letter `O` before the description (col 3803) unchanged.**
+
+## Steps
+
+1. Run:
+   ```bash
+   PYTHONIOENCODING=utf-8 python "<skill dir>/scripts/mman_vn.py" <first B/L to keep> "<folder containing input>"
+   ```
+   The result is always `output/MMAN_VN.txt` in that folder (`-o name` to rename). The input
+   files are never modified. Requires `pandas`, `xlrd` (.xls) and `openpyxl` (.xlsx).
+2. Report to the user in Thai: lines removed and the first B/L kept, how many B/Ls remain,
+   0145/0122 counts, how many status lines changed and to what, which B/Ls went PG→PX, file size.
+3. If the script prints `ERROR` (B/L not found, more than one MMAN/list file) or `WARNING`
+   (B/L not in the list, B/L without POL, unexpected layout), tell the user and ask. Don't guess.

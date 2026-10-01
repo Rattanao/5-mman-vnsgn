@@ -1,0 +1,9 @@
+# ข้อมูลจริงของลูกค้า ห้ามขึ้น GitHub
+input/
+Input/
+output/
+*.xls
+*.xlsx
+*.csv
+MMAN_*.txt
+__pycache__/
