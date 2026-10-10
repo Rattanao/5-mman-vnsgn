@@ -31,7 +31,10 @@
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--text);
   font: 15px/1.6 "Sarabun", system-ui, sans-serif; }
-header.bar { background: var(--navy); color: var(--on-navy); padding: 16px 28px; }
+header.bar { background: var(--navy); color: var(--on-navy); padding: 16px 28px;
+  display: flex; justify-content: space-between; align-items: center; gap: 8px 24px; flex-wrap: wrap; }
+header.bar .by { font: 14px/1.5 "Sarabun", sans-serif; text-align: right; opacity: .9; }
+@media (max-width: 640px) { header.bar .by { text-align: left; } }
 header.bar h1 { font: 600 24px/1.4 "Kanit", sans-serif; margin: 0; }
 main { max-width: 1200px; margin: 0 auto; padding: 24px 28px 60px; }
 @media (max-width: 640px) { header.bar, main { padding-left: 16px; padding-right: 16px; } }
@@ -78,7 +81,9 @@ details summary { cursor: pointer; color: var(--muted); }
 </style>
 </head>
 <body>
-<header class="bar"><h1>MMAN VN — ตัด B/L + Change Status → MMAN_VN.txt</h1></header>
+<header class="bar"><h1>MMAN VN — ตัด B/L + Change Status → MMAN_VN.txt</h1>
+  <div class="by">Project by Ms. Rattana Mudlae<br>Position Import DOC.</div>
+</header>
 <main>
   <div class="card">
     <div class="form">
