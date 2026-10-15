@@ -1,6 +1,6 @@
 ---
 name: mman-vn
-description: "MMAN VN" for a Thailand import MMAN EDI manifest (fixed-width MMAN_*.txt). In one step it (1) keeps the PSKV header line, cuts every line after it up to the B/L the user names (e.g. HASLS21260801066) and keeps that B/L through the last line, then (2) applies Change status from a B/L list (.xls/.xlsx/.csv with B/L No., Status, POL): POL + copy of THBKK, shed code (0145 for B/Ls with a Status, 0122 for the rest), POL country code in place of TH, new container status (e.g. 8  N -> 9  N), PG -> PX. Writes output/MMAN_VN.txt. Use whenever the user says "mman vn", "ตัดและ change status", "ตัด MMAN ตั้งแต่ BL ...", "ทำ mman_vn", or points to a folder with input/ holding an MMAN_*.txt plus a status list and names a starting B/L.
+description: "MMAN VN" for a Thailand import MMAN EDI manifest (fixed-width MMAN_*.txt). In one step it (1) keeps the PSKV header line, keeps only the B/L range the user names, "เริ่มต้นเก็บ B/L … ถึง B/L …" (e.g. HASLS21260801066 to HASLS21260801762, with the last B/L's sub-B/Ls; no end B/L = to the last line), cutting everything before and after, then (2) applies Change status from a B/L list (.xls/.xlsx/.csv with B/L No., Status, POL): POL + copy of THBKK, shed code (0145 for B/Ls with a Status, 0122 for the rest), POL country code in place of TH, new container status (e.g. 8  N -> 9  N), PG -> PX. Writes output/MMAN_VN.txt. Use whenever the user says "mman vn", "ตัดและ change status", "ตัด MMAN ตั้งแต่ BL ...", "ทำ mman_vn", or points to a folder with input/ holding an MMAN_*.txt plus a status list and names a starting B/L.
 ---
 
 # MMAN VN (ตัด + Change status → output/MMAN_VN.txt)
@@ -12,8 +12,9 @@ broke CRLF).
 ## Input
 
 - A folder with `input/` (or `Input/`) containing **1** `MMAN_*.txt` + **1** list file (`.xls`, `.xlsx`, `.csv`)
-- The **first B/L to keep**, given by the user (e.g. `HASLS21260801066`). If the user did not
-  give one, ask. Don't guess.
+- The **first B/L to keep** ("เริ่มต้นเก็บ B/L", e.g. `HASLS21260801066`) and optionally the
+  **last B/L to keep** ("ถึง B/L", e.g. `HASLS21260801762`). If the user gave no B/L, ask. Don't
+  guess. No end B/L = keep through the last line.
 - List file: only columns A-C are used, found **by header name** (B/L No., Status, POL in any
   order, e.g. `SUR.xls` = POL, Status, B/L No.). Status blank = keep the original status.
 - If the list is a **PDF**, extract columns A-C into a CSV with the header `B/L No.,Status,POL`
@@ -21,8 +22,9 @@ broke CRLF).
 
 ## What the script does
 
-1. **Cut**: keep line 1 (`PSKV…`), remove every line after it up to (not including) the line of
-   the given B/L, keep from that B/L to the last line. Bytes are copied as-is.
+1. **Cut**: keep line 1 (`PSKV…`) plus the lines from the first B/L through the last B/L,
+   including the last B/L's sub-B/Ls (`…762A`, `…762B`) and their container lines. Everything
+   before and after is removed. Bytes are copied as-is.
 2. **Change status** on the remaining B/Ls (0-based columns on each `HASL…` line):
 
 | # | Position | Value |
@@ -41,11 +43,12 @@ broke CRLF).
 
 1. Run:
    ```bash
-   PYTHONIOENCODING=utf-8 python "<skill dir>/scripts/mman_vn.py" <first B/L to keep> "<folder containing input>"
+   PYTHONIOENCODING=utf-8 python "<skill dir>/scripts/mman_vn.py" <first B/L> "<folder containing input>" [--to <last B/L>]
    ```
+   (If `python` is only the Microsoft Store alias, use `py` instead.)
    The result is always `output/MMAN_VN.txt` in that folder (`-o name` to rename). The input
    files are never modified. Requires `pandas`, `xlrd` (.xls) and `openpyxl` (.xlsx).
-2. Report to the user in Thai: lines removed and the first B/L kept, how many B/Ls remain,
+2. Report to the user in Thai: lines removed and the B/L range kept, how many B/Ls remain,
    0145/0122 counts, how many status lines changed and to what, which B/Ls went PG→PX, file size.
 3. If the script prints `ERROR` (B/L not found, more than one MMAN/list file) or `WARNING`
    (B/L not in the list, B/L without POL, unexpected layout), tell the user and ask. Don't guess.
