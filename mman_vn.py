@@ -1,11 +1,9 @@
 """MMAN VN: cut + Change status in one step.
 
-    python mman_vn.py <first B/L to keep> [folder] [--to <last B/L to keep>] [-o name]
-                      [--shed-yes 0145] [--shed-no 0122]
+    python mman_vn.py <first B/L to keep> [folder] [-o name] [--shed-yes 0145] [--shed-no 0122]
 
-Keeps the PSKV header line plus the lines from the first B/L through the last B/L
-(with its sub-B/Ls and container lines; no --to = through the last line), drops
-everything else, then applies Change status (change_status.py, next to
+Keeps the PSKV header line, drops every line after it up to (not including) the
+given B/L, keeps the rest, then applies Change status (change_status.py, next to
 this file) with the list file in <folder>/input.
 Result: <folder>/output/MMAN_VN.txt. The source files are never modified.
 """
@@ -28,43 +26,21 @@ def find_one(folder: Path, patterns, what) -> Path:
     return hits[0]
 
 
-def cut(raw: bytes, first_bl: str, last_bl: str = ""):
-    """PSKV line + the lines from B/L `first_bl` through B/L `last_bl` (with its sub-B/Ls …A, …B
-    and their container lines). Blank first = from the first B/L, blank last = to the end.
-    Bytes are kept as-is (CRLF safe). Returns (data, lines removed, total lines)."""
+def cut(raw: bytes, bl: str):
+    """PSKV line + everything from the B/L line to the end. Bytes are kept as-is (CRLF safe)."""
     lines = raw.splitlines(keepends=True)
     if not lines or not lines[0].startswith(b"PSKV"):
         sys.exit("ERROR: first line is not the PSKV header")
-
-    def bl_at(i):
-        return lines[i][:35].strip().decode("latin-1") if lines[i].startswith(b"HASL") else None
-
-    def in_group(bl, key):
-        return bl == key or (len(bl) == len(key) + 1 and bl.startswith(key) and bl[-1].isalpha())
-
-    first_bl, last_bl = first_bl.strip().upper(), last_bl.strip().upper()
-    start = 1
-    if first_bl:
-        start = next((i for i in range(1, len(lines)) if bl_at(i) == first_bl), None)
-        if start is None:
-            sys.exit(f"ERROR: start B/L {first_bl} not found in the MMAN file")
-    stop = len(lines)
-    if last_bl:
-        hits = [i for i in range(start, len(lines)) if bl_at(i) and in_group(bl_at(i), last_bl)]
-        if not hits:
-            sys.exit(f"ERROR: end B/L {last_bl} not found in the MMAN file"
-                     + (f" after start B/L {first_bl}" if first_bl else ""))
-        stop = hits[-1] + 1
-        while stop < len(lines) and not bl_at(stop):
-            stop += 1
-    kept = [lines[0]] + lines[start:stop]
-    return b"".join(kept), len(lines) - len(kept), len(lines)
+    key = bl.strip().upper().encode("latin-1")
+    start = next((i for i, l in enumerate(lines[1:], 1) if l[:35].strip() == key), None)
+    if start is None:
+        sys.exit(f"ERROR: B/L {bl} not found in the MMAN file")
+    return b"".join([lines[0]] + lines[start:]), start - 1, len(lines)
 
 
 def main():
     ap = argparse.ArgumentParser(description="Cut + Change status -> output/MMAN_VN.txt")
     ap.add_argument("bl", help="first B/L to keep, e.g. HASLS21260801066")
-    ap.add_argument("--to", default="", help="last B/L to keep (with its sub-B/Ls); default: to the last line")
     ap.add_argument("folder", nargs="?", default=".", help="folder holding input/ (default: current folder)")
     ap.add_argument("-o", default="MMAN_VN.txt")
     ap.add_argument("--shed-yes", default="0145")
@@ -78,7 +54,7 @@ def main():
     out = folder / "output" / a.o
     out.parent.mkdir(exist_ok=True)
 
-    data, removed, total = cut(mman.read_bytes(), a.bl, a.to)
+    data, removed, total = cut(mman.read_bytes(), a.bl)
     fd, tmp = tempfile.mkstemp(suffix=".txt")
     try:
         with os.fdopen(fd, "wb") as f:
@@ -88,7 +64,7 @@ def main():
         os.remove(tmp)
 
     print(f"MMAN : {mman}\nLIST : {lst}\nOUT  : {out}")
-    print(f"Cut              : removed {removed} lines ({total} -> {total - removed}), kept B/L {a.bl.upper()} to {a.to.upper() or 'last line'}")
+    print(f"Cut              : removed {removed} lines ({total} -> {total - removed}), first B/L kept {a.bl.upper()}")
     print(f"B/L lines edited : {rep['bl_lines']}  (shed {a.shed_yes}: {len(rep['shed_yes'])}, "
           f"shed {a.shed_no}: {len(rep['shed_no'])})")
     print("Status set       : " + (", ".join(f"{k!r} x{v}" for k, v in rep["status_lines"].items()) or "none"))
