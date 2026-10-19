@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>MMAN VN — ตัด + Change Status</title>
+<link rel="icon" href="assets/hal-logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600&family=Sarabun:wght@400;600&family=IBM+Plex+Mono&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -36,6 +37,9 @@ header.bar { background: var(--navy); color: var(--on-navy); padding: 16px 28px;
 header.bar .by { font: 14px/1.5 "Sarabun", sans-serif; text-align: right; opacity: .9; }
 @media (max-width: 640px) { header.bar .by { text-align: left; } }
 header.bar h1 { font: 600 24px/1.4 "Kanit", sans-serif; margin: 0; }
+header.bar .brand { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; min-width: 0; }
+.logo-badge { background: #fff; border-radius: 6px; padding: 5px 10px; display: inline-flex; line-height: 0; flex: none; }
+.logo-badge img { height: 30px; width: auto; display: block; }
 main { max-width: 1200px; margin: 0 auto; padding: 24px 28px 60px; }
 @media (max-width: 640px) { header.bar, main { padding-left: 16px; padding-right: 16px; } }
 .card { background: var(--card); border-radius: 10px; padding: 24px 26px; margin-bottom: 18px;
@@ -85,7 +89,7 @@ details summary { cursor: pointer; color: var(--muted); }
 </style>
 </head>
 <body>
-<header class="bar"><h1>MMAN VN — ตัด B/L + Change Status → MMAN_VN.txt</h1>
+<header class="bar"><div class="brand"><span class="logo-badge"><img src="assets/hal-logo.png" alt="Heung A Line"></span><h1>MMAN VN — ตัด B/L + Change Status → MMAN_VN.txt</h1></div>
   <div class="by">Project by Ms. Rattana Mudlae<br>Position Import DOC.</div>
 </header>
 <main>
