@@ -27,6 +27,7 @@
 | 6 | บรรทัดตู้ col 18-21 | Status จากไฟล์รายการ เช่น `8  N` → `9  N` (ว่าง = คงเดิม) |
 | – | หน่วยหีบห่อ | `PG` → `PX` ทุก B/L |
 | 7 | col 881, 974, 1672 | ชื่อ consignee และชื่อ notify = ชื่อที่ col 1765 เว้นวรรค 1 เคาะเท่านั้น (ยกเว้น B/L TRANSIT/TRANSHIPMENT หรือชื่อ consignee ไม่ตรงกับ notify → คงเดิม) |
+| 8 | col 1670-1671 | B/L TRANSIT/TRANSHIPMENT (รวม "INTRANSIT"): `TH` หน้าชื่อ notify = ประเทศปลายทาง `LA` LAO · `MM` MYANMAR · `KH` CAMBODIA · `CN` CHINA · `PG` PAPUA NEW GUINEA · `MY` MALAYSIA (ดูจากที่อยู่ consignee ก่อน แล้วจึงดูจาก description) |
 
 ความยาวบรรทัดและการขึ้นบรรทัด (CRLF) คงเดิมทุกไบต์ ไฟล์ต้นฉบับไม่ถูกแก้ไข
 

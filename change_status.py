@@ -36,7 +36,23 @@ UNIT_RE = re.compile(r"(\d{11}KGM\d{8})PG(\d{11}MTQ)")
 PORT_SHED = {"THBMT": "0110", "THSCT": "0302", "THLKR": "0332", "THUCT": "0113"}
 SHED_LCH_DG = "2826"
 DG_RE = re.compile(r"\bUN\s?(?:NO\.?\s?)?\d{4}\b|\bIMO\b|\bIMDG\b|\bCLASS\s?\d", re.I)
-TRANSIT_RE = re.compile(r"\bTRANSIT\b|\bTRANS[\s-]?S?HIP", re.I)
+TRANSIT_RE = re.compile(r"TRANSIT\b|\bTRANS[\s-]?S?HIP", re.I)   # also "INTRANSIT"
+# 8. TRANSIT/TRANSHIPMENT: notify country (col 1669, "TH") = destination country, found in the
+#    consignee name+address (col 973), else in the description ("... TO LAOS ...")
+COL_N_CTRY = 1669
+DEST_CTRY = [("LA", r"\bLAOS?\b|\bLAO\s*P\.?\s*D\.?\s*R|\bVIENTIANE\b"), ("MM", r"\bMYANMAR\b|\bBURMA\b|\bYANGON\b"),
+             ("KH", r"\bCAMBODIA\b|\bPHNOM\s*PENH\b"), ("CN", r"\bCHINA\b"), ("PG", r"\bPAPUA\s+NEW\s+GUINEA\b"),
+             ("MY", r"\bMALAYSIA\b")]
+
+
+def dest_country(line: str):
+    """Country code of the transit destination, or None."""
+    def hits(text):
+        return sorted((m.start(), code) for code, pat in DEST_CTRY for m in re.finditer(pat, text, re.I))
+    addr, desc = hits(line[COL_C_FULL:COL_C_FULL + W_FULL]), hits(line[3302:])
+    if addr:
+        return addr[-1][1]   # the country closes the address
+    return desc[0][1] if desc else None
 
 
 def fix_names(line: str):
@@ -48,7 +64,8 @@ def fix_names(line: str):
     if not old:
         return line, "same"
     if TRANSIT_RE.search(line):
-        return line, "transit"
+        code = dest_country(line)
+        return (set_at(line, COL_N_CTRY, code) if code else line), "transit"
     target, full, new = " ".join(old.split()), line[COL_N_FULL:COL_N_FULL + W_FULL], None
     for m in re.finditer(r"\S+", full):
         words = " ".join(full[:m.end()].split())
@@ -133,7 +150,7 @@ def change_status(mman: Path, lst: Path, out: Path, shed: str) -> dict:
 
     rep = {"bl_lines": 0, "sheds": Counter(), "dg": [], "with_status": [], "status_lines": Counter(),
            "pg_to_px": [], "not_in_list": [], "no_pol": [], "layout_warn": [],
-           "names": {"changed": [], "same": [], "transit": [], "differ": []}}
+           "names": {"changed": [], "same": [], "transit": [], "differ": []}, "transit_ctry": [], "transit_no_ctry": []}
     ports = Counter(p[COL_PORT:COL_PORT + 5] for p in parts if BL_RE.match(p) and p[COL_PORT:COL_PORT + 5].strip())
     rep["port"] = port = ports.most_common(1)[0][0] if ports else ""
     cur = None
@@ -168,6 +185,12 @@ def change_status(mman: Path, lst: Path, out: Path, shed: str) -> dict:
             if len(line) >= COL_N_FULL + W_FULL:
                 line, res = fix_names(line)
                 rep["names"][res].append(bl)
+                if res == "transit":
+                    code = line[COL_N_CTRY:COL_N_CTRY + 2]
+                    if code != "TH":
+                        rep["transit_ctry"].append(f"{bl}={code}")
+                    else:
+                        rep["transit_no_ctry"].append(bl)
             if st:
                 rep["with_status"].append(bl)
             rep["bl_lines"] += 1
@@ -219,7 +242,9 @@ def main():
     print(f"Port (col 41-45) : {rep['port']}")
     print(f"Names from 1764  : changed {len(rep['names']['changed'])}, already same {len(rep['names']['same'])}")
     if rep["names"]["transit"]:
-        print(f"Names kept (TRANSIT/TRANSHIPMENT): {rep['names']['transit']}")
+        print(f"Names kept (TRANSIT/TRANSHIPMENT): {rep['names']['transit']}  country: {rep['transit_ctry']}")
+    if rep["transit_no_ctry"]:
+        print(f"WARNING TRANSIT without a known destination country (TH kept): {rep['transit_no_ctry']}")
     print(f"Size / changed   : {rep['size']} bytes, {rep['bytes_changed']} bytes changed")
     if rep["names"]["differ"]:
         print(f"WARNING names kept, consignee is not the notify name: {rep['names']['differ']}")

@@ -96,7 +96,9 @@ def main():
     print(f"Port (col 41-45) : {rep['port']}  (port of most B/Ls; col 46-50 kept as in the file)")
     print(f"Names from 1764  : changed {rep['names']['changed'] or 'none'}, already same {len(rep['names']['same'])}")
     if rep["names"]["transit"]:
-        print(f"Names kept (TRANSIT/TRANSHIPMENT): {rep['names']['transit']}")
+        print(f"Names kept (TRANSIT/TRANSHIPMENT): {rep['names']['transit']}  country: {rep['transit_ctry']}")
+    if rep["transit_no_ctry"]:
+        print(f"WARNING TRANSIT without a known destination country (TH kept): {rep['transit_no_ctry']}")
     print(f"Size / changed   : {rep['size']} bytes, {rep['bytes_changed']} bytes changed")
     if rep["names"]["differ"]:
         print(f"WARNING names kept, consignee is not the notify name: {rep['names']['differ']}")
