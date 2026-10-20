@@ -6,7 +6,7 @@ Keeps the PSKV header line plus the lines from the first B/L through the last B/
 (with its sub-B/Ls and container lines; no --to = through the last line), drops
 everything else, then applies Change status (change_status.py, next to
 this file) with the list file in <folder>/input.
-Result: <folder>/output/MMAN_VN.txt. The source files are never modified.
+Result: <folder>/output/MMAN_LCH.txt. The source files are never modified.
 """
 import argparse
 import os
@@ -17,7 +17,7 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from change_status import change_status  # noqa: E402
 
-RESULTS = {"mman_vn.txt", "mman_edi.txt"}
+RESULTS = {"mman_lch.txt", "mman_vn.txt", "mman_edi.txt"}
 
 
 def find_one(folder: Path, patterns, what) -> Path:
@@ -61,12 +61,13 @@ def cut(raw: bytes, first_bl: str, last_bl: str = ""):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Cut + Change status -> output/MMAN_VN.txt")
+    ap = argparse.ArgumentParser(description="Cut + Change status -> output/MMAN_LCH.txt")
     ap.add_argument("bl", help="first B/L to keep, e.g. HASLS21260801066")
     ap.add_argument("--to", default="", help="last B/L to keep (with its sub-B/Ls); default: to the last line")
     ap.add_argument("folder", nargs="?", default=".", help="folder holding input/ (default: current folder)")
-    ap.add_argument("-o", default="MMAN_VN.txt")
-    ap.add_argument("--shed", default="2813", help="shed code for every B/L (default 2813)")
+    ap.add_argument("-o", default="MMAN_LCH.txt")
+    ap.add_argument("--shed", default="2813", help="shed for THLCH non-DG and other ports (default 2813); "
+                    "BMT 0110, SCT 0302, LKR 0332, UCT 0113 and THLCH DG 2826 are fixed")
     a = ap.parse_args()
 
     folder = Path(a.folder).resolve()
@@ -81,13 +82,15 @@ def main():
     try:
         with os.fdopen(fd, "wb") as f:
             f.write(data)
-        rep = change_status(Path(tmp), lst, out, a.shed, a.shed)
+        rep = change_status(Path(tmp), lst, out, a.shed)
     finally:
         os.remove(tmp)
 
     print(f"MMAN : {mman}\nLIST : {lst}\nOUT  : {out}")
     print(f"Cut              : removed {removed} lines ({total} -> {total - removed}), kept B/L {a.bl.upper() or 'first B/L'} to {a.to.upper() or 'last line'}")
-    print(f"B/L lines edited : {rep['bl_lines']}  (shed {a.shed}, with Status: {len(rep['shed_yes'])})")
+    print(f"B/L lines edited : {rep['bl_lines']}  (with Status: {len(rep['with_status'])})")
+    print("Shed             : " + ", ".join(f"{k} x{v}" for k, v in rep["sheds"].items()))
+    print(f"DG B/L           : {rep['dg'] or 'none'}")
     print("Status set       : " + (", ".join(f"{k!r} x{v}" for k, v in rep["status_lines"].items()) or "none"))
     print(f"PG -> PX         : {rep['pg_to_px'] or 'none'}")
     print(f"Port (col 41-45) : {rep['port']}  (port of most B/Ls; col 46-50 kept as in the file)")

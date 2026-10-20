@@ -32,11 +32,16 @@ W_NAME, W_FULL = 93, 696
 BL_RE = re.compile(r"^HASL")
 CNTR_RE = re.compile(r"^[A-Z]{4}\d{7} ")
 UNIT_RE = re.compile(r"(\d{11}KGM\d{8})PG(\d{11}MTQ)")
+# 4. shed by the original port (col 45-49); THLCH DG (UN/CLASS) gets SHED_LCH_DG, the rest the SHED NO. given
+PORT_SHED = {"THBMT": "0110", "THSCT": "0302", "THLKR": "0332", "THUCT": "0113"}
+SHED_LCH_DG = "2826"
+DG_RE = re.compile(r"\bUN\s?(?:NO\.?\s?)?\d{4}\b|\bIMO\b|\bIMDG\b|\bCLASS\s?\d", re.I)
 TRANSIT_RE = re.compile(r"\bTRANSIT\b|\bTRANS[\s-]?S?HIP", re.I)
 
 
 def fix_names(line: str):
-    """Copy the name at col 1764 into cols 880, 973 and 1671. Returns (line, result) where result is
+    """Copy the name at col 1764 into cols 880, 973 and 1671 with single spaces only.
+    Returns (line, result) where result is
     'changed', 'same', 'transit' (TRANSIT/TRANSHIPMENT B/L, kept) or 'differ' (consignee is not the
     notify party, kept). The name at 1764 is the part whose words match the consignee name at 880."""
     old = line[COL_C_NAME:COL_C_NAME + W_NAME].rstrip()
@@ -52,8 +57,9 @@ def fix_names(line: str):
             break
         if len(words) >= len(target):
             break
-    if new is None or len(new) > W_NAME:
+    if new is None:
         return line, "differ"
+    new = " ".join(new.split())
     out = set_at(line, COL_C_NAME, new.ljust(W_NAME))
     out = set_at(out, COL_N_NAME, new.ljust(W_NAME))
     field = out[COL_C_FULL:COL_C_FULL + W_FULL]
@@ -87,19 +93,23 @@ def norm_status(st: str) -> str:
 
 
 def read_list(path: Path) -> dict:
+    """{base B/L: (status, POL, DG)}; DG = the list has a non-blank "DG" column for that B/L."""
     if path.suffix.lower() == ".csv":
         df = pd.read_csv(path, header=0, dtype=str)
     else:
         df = pd.read_excel(path, header=0, dtype=str)
-    df = df.iloc[:, :3]
-    df.columns = map_columns(list(df.columns))
+    dg_col = next((c for c in df.columns if re.sub(r"[^a-z]", "", str(c).lower()) == "dg"), None)
+    dg = df[dg_col].fillna("").str.strip() != "" if dg_col is not None else pd.Series(False, index=df.index)
+    df = df.iloc[:, :3].copy()
+    df["dg"] = dg
+    df.columns = map_columns(list(df.columns[:3])) + ["dg"]
     cfg = {}
     for r in df.itertuples():
         if not isinstance(r.bl, str) or not r.bl.strip():
             continue
         st = norm_status(r.status) if isinstance(r.status, str) and r.status.strip() else None
         pol = r.pol.strip().upper() if isinstance(r.pol, str) else ""
-        cfg[r.bl.strip()] = (st, pol)
+        cfg[r.bl.strip()] = (st, pol, bool(r.dg))
     return cfg
 
 
@@ -107,12 +117,21 @@ def set_at(s: str, pos: int, txt: str) -> str:
     return s[:pos] + txt + s[pos + len(txt):]
 
 
-def change_status(mman: Path, lst: Path, out: Path, shed_yes: str, shed_no: str) -> dict:
+def shed_for(line: str, dg: bool, shed: str) -> str:
+    port = line[COL_PORT:COL_PORT + 5]
+    if port in PORT_SHED:
+        return PORT_SHED[port]
+    if port == "THLCH" and dg:
+        return SHED_LCH_DG
+    return shed
+
+
+def change_status(mman: Path, lst: Path, out: Path, shed: str) -> dict:
     cfg = read_list(lst)
     raw = mman.read_bytes()
     parts = [p.decode(ENC) for p in re.split(rb"(\r\n|\n)", raw)]  # keep original line endings
 
-    rep = {"bl_lines": 0, "shed_yes": [], "shed_no": [], "status_lines": Counter(),
+    rep = {"bl_lines": 0, "sheds": Counter(), "dg": [], "with_status": [], "status_lines": Counter(),
            "pg_to_px": [], "not_in_list": [], "no_pol": [], "layout_warn": [],
            "names": {"changed": [], "same": [], "transit": [], "differ": []}}
     ports = Counter(p[COL_PORT:COL_PORT + 5] for p in parts if BL_RE.match(p) and p[COL_PORT:COL_PORT + 5].strip())
@@ -126,7 +145,8 @@ def change_status(mman: Path, lst: Path, out: Path, shed_yes: str, shed_no: str)
                 rep["not_in_list"].append(bl)
                 cur = None
                 continue
-            st, pol = cfg[base]
+            st, pol, dg = cfg[base]
+            dg = dg or bool(DG_RE.search(line[3302:]))
             cur = st
             if line[COL_PORT:COL_PORT + 5].strip() == "" or line[COL_POL:COL_COPY].strip():
                 rep["layout_warn"].append(bl)
@@ -136,7 +156,11 @@ def change_status(mman: Path, lst: Path, out: Path, shed_yes: str, shed_no: str)
             else:
                 rep["no_pol"].append(bl)
             line = set_at(line, COL_COPY, port or line[COL_PORT:COL_PORT + 5])
-            line = set_at(line, COL_SHED, shed_yes if st else shed_no)
+            sh = shed_for(line, dg, shed)
+            line = set_at(line, COL_SHED, sh)
+            rep["sheds"][sh] += 1
+            if dg:
+                rep["dg"].append(bl)
             m = UNIT_RE.search(line)
             if m:
                 line = line[:m.start()] + m.group(1) + "PX" + m.group(2) + line[m.end():]
@@ -144,7 +168,8 @@ def change_status(mman: Path, lst: Path, out: Path, shed_yes: str, shed_no: str)
             if len(line) >= COL_N_FULL + W_FULL:
                 line, res = fix_names(line)
                 rep["names"][res].append(bl)
-            rep["shed_yes" if st else "shed_no"].append(bl)
+            if st:
+                rep["with_status"].append(bl)
             rep["bl_lines"] += 1
             parts[i] = line
         elif cur and CNTR_RE.match(line):
@@ -175,8 +200,7 @@ def main():
     ap = argparse.ArgumentParser(description="Change status -> MMAN_EDI.txt")
     ap.add_argument("paths", nargs="+")
     ap.add_argument("-o", "--output")
-    ap.add_argument("--shed-yes", default="0145")
-    ap.add_argument("--shed-no", default="0122")
+    ap.add_argument("--shed", default="2813", help="shed for THLCH (non-DG) and ports not in PORT_SHED")
     a = ap.parse_args()
     if len(a.paths) == 1:
         mman, lst, out = find_inputs(Path(a.paths[0]))
@@ -185,11 +209,11 @@ def main():
         out = mman.parent / "MMAN_EDI.txt"
     if a.output:
         out = Path(a.output)
-    rep = change_status(mman, lst, out, a.shed_yes, a.shed_no)
+    rep = change_status(mman, lst, out, a.shed)
 
     print(f"MMAN : {mman}\nLIST : {lst}\nOUT  : {out}")
-    print(f"B/L lines edited : {rep['bl_lines']}  (shed {a.shed_yes}: {len(rep['shed_yes'])}, "
-          f"shed {a.shed_no}: {len(rep['shed_no'])})")
+    print(f"B/L lines edited : {rep['bl_lines']}  (shed " + ", ".join(f"{k} x{v}" for k, v in rep["sheds"].items()) + ")")
+    print(f"DG B/L           : {rep['dg'] or 'none'}")
     print("Status set       : " + (", ".join(f"{k.strip()!r} x{v}" for k, v in rep["status_lines"].items()) or "none"))
     print(f"PG -> PX         : {rep['pg_to_px'] or 'none'}")
     print(f"Port (col 41-45) : {rep['port']}")

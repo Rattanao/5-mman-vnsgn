@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MMAN VN — ตัด + Change Status</title>
+<title>MMAN LCH — ตัด + Change Status</title>
 <link rel="icon" href="assets/hal-logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600&family=Sarabun:wght@400;600&family=IBM+Plex+Mono&display=swap" rel="stylesheet">
@@ -89,7 +89,7 @@ details summary { cursor: pointer; color: var(--muted); }
 </style>
 </head>
 <body>
-<header class="bar"><div class="brand"><span class="logo-badge"><img src="assets/hal-logo.png" alt="Heung A Line"></span><h1>MMAN VN — ตัด B/L + Change Status → MMAN_VN.txt</h1></div>
+<header class="bar"><div class="brand"><span class="logo-badge"><img src="assets/hal-logo.png" alt="Heung A Line"></span><h1>MMAN LCH — ตัด B/L + Change Status → MMAN_LCH.txt</h1></div>
   <div class="by">Project by Ms. Rattana Mudlae<br>Position Import DOC.</div>
 </header>
 <main>
@@ -124,13 +124,13 @@ details summary { cursor: pointer; color: var(--muted); }
         <button id="clear" class="ghost" type="button">ลบไฟล์</button>
       </div>
     </div>
-    <p class="note">เริ่มต้นเก็บ B/L … ถึง B/L: เก็บบรรทัด PSKV ไว้ แล้วเก็บเฉพาะตั้งแต่ B/L เริ่มต้นจนถึง B/L สุดท้ายที่กำหนด (รวม sub-B/L …A, …B และบรรทัดตู้ของ B/L นั้น) ที่เหลือตัดออก · เว้นว่างช่องเริ่มต้น = ตั้งแต่ B/L แรก · เว้นว่างช่องถึง = ถึงบรรทัดสุดท้าย · เว้นว่างทั้งสองช่อง = ไม่ตัด · SHED NO.: ใส่รหัสเดียวกันทุก B/L · ประมวลผลในเบราว์เซอร์ ไม่มีการอัปโหลดไฟล์</p>
+    <p class="note">เริ่มต้นเก็บ B/L … ถึง B/L: เก็บบรรทัด PSKV ไว้ แล้วเก็บเฉพาะตั้งแต่ B/L เริ่มต้นจนถึง B/L สุดท้ายที่กำหนด (รวม sub-B/L …A, …B และบรรทัดตู้ของ B/L นั้น) ที่เหลือตัดออก · เว้นว่างช่องเริ่มต้น = ตั้งแต่ B/L แรก · เว้นว่างช่องถึง = ถึงบรรทัดสุดท้าย · เว้นว่างทั้งสองช่อง = ไม่ตัด · SHED NO.: ใช้กับ THLCH ที่ไม่ใช่ DG (THLCH DG = 2826 · BMT 0110 · SCT 0302 · LKR 0332 · UCT 0113) · ประมวลผลในเบราว์เซอร์ ไม่มีการอัปโหลดไฟล์</p>
   </div>
 
   <div class="card hidden" id="result">
     <div class="res-head">
       <h2>ผลการตัดและเปลี่ยน Status</h2>
-      <button id="dl" class="sec hidden">ดาวน์โหลด MMAN_VN.txt</button>
+      <button id="dl" class="sec hidden">ดาวน์โหลด MMAN_LCH.txt</button>
     </div>
     <div id="msgs"></div>
     <div class="stats" id="stats"></div>
@@ -146,11 +146,11 @@ details summary { cursor: pointer; color: var(--muted); }
         <li>col 36-40 = POL (คอลัมน์ C)</li>
         <li>col 41-45 = ท่าเรือของ B/L ส่วนใหญ่ในไฟล์ (เช่น THBKK, THLCH)</li>
         <li>col 46-50 = ท่าเรือตามต้นฉบับ (THLCH, THLKR, …) คงเดิม ห้ามแก้</li>
-        <li>col 51-54 = Shed ตามช่อง SHED NO. (ทุก B/L)</li>
+        <li>col 51-54 = Shed ตามท่าต้นฉบับ: BMT 0110 · SCT 0302 · LKR 0332 · UCT 0113 · THLCH ที่เป็น DG (มี UN/CLASS) 2826 · ที่เหลือตามช่อง SHED NO.</li>
         <li>col 844-845 = อักษร 2 ตัวแรกของ POL (แทน TH)</li>
         <li>บรรทัดตู้ = Status จากคอลัมน์ B (เช่น 8&nbsp;&nbsp;N → 9&nbsp;&nbsp;N) ว่าง = คงเดิม</li>
         <li>หน่วยหีบห่อ PG → PX ทุก B/L · ตัวอักษร O หน้า description คงเดิม</li>
-        <li>ชื่อ consignee (col 881, 974) และชื่อ notify (col 1672) = ชื่อที่ col 1765 ยกเว้น B/L TRANSIT/TRANSHIPMENT หรือชื่อ consignee ไม่ตรงกับ notify ให้คงเดิม</li>
+        <li>ชื่อ consignee (col 881, 974) และชื่อ notify (col 1672) = ชื่อที่ col 1765 เว้นวรรค 1 เคาะเท่านั้น ยกเว้น B/L TRANSIT/TRANSHIPMENT หรือชื่อ consignee ไม่ตรงกับ notify ให้คงเดิม</li>
       </ol>
       B/L ในคอลัมน์ A ครอบคลุม sub-B/L ด้วย (…462A, …462B) · หลังตัดแล้ว ความยาวบรรทัดและการขึ้นบรรทัด (CRLF) คงเดิมทุกไบต์
     </details>
@@ -161,6 +161,9 @@ details summary { cursor: pointer; color: var(--muted); }
 const COL = { POL: 35, COPY: 40, PORT: 45, SHED: 50, CTRY: 843, STATUS: 17 };
 // consignee name (880), consignee name+address (973), notify name (1671) <- name at notify name+address (1764)
 const NAME = { C_NAME: 880, C_FULL: 973, N_NAME: 1671, N_FULL: 1764, W: 93, W_FULL: 696 };
+// shed by the original port (col 46-50); THLCH DG (UN/CLASS) = 2826; the rest = SHED NO.
+const PORT_SHED = { THBMT: "0110", THSCT: "0302", THLKR: "0332", THUCT: "0113" }, SHED_LCH_DG = "2826";
+const DG_RE = /\bUN\s?(?:NO\.?\s?)?\d{4}\b|\bIMO\b|\bIMDG\b|\bCLASS\s?\d/i;
 const TRANSIT_RE = /\bTRANSIT\b|\bTRANS[\s-]?S?HIP/i;
 const words = t => t.trim().split(/\s+/).filter(Boolean).join(" ");
 const setAt = (t, pos, v) => t.slice(0, pos) + v + t.slice(pos + v.length);
@@ -177,7 +180,8 @@ function fixNames(line) {
     if (w === target) { nw = full.slice(0, m.index + m[0].length); break; }
     if (w.length >= target.length) break;
   }
-  if (nw === null || nw.length > NAME.W) return [line, "differ"];
+  if (nw === null) return [line, "differ"];
+  nw = words(nw);
   let out = setAt(line, NAME.C_NAME, nw.padEnd(NAME.W));
   out = setAt(out, NAME.N_NAME, nw.padEnd(NAME.W));
   const field = out.slice(NAME.C_FULL, NAME.C_FULL + NAME.W_FULL);
@@ -215,13 +219,14 @@ bindDrop("dropList", "inList", "fnList", async f => {
   const head = (rows[0] || []).slice(0, 3).map(key);
   const find = p => head.findIndex(h => h.startsWith(p));
   let ci = { bl: find("bl"), st: find("status"), pol: find("pol") };
+  const dgCol = (rows[0] || []).map(key).indexOf("dg");  // SUR form has a DG column ("DG:3  UN:1245")
   if (Object.values(ci).some(i => i < 0)) ci = { bl: 0, st: 1, pol: 2 };
   const cfg = {};
   rows.slice(1).forEach(r => {
     const bl = String(r[ci.bl] || "").trim();
     if (!bl) return;
     const st = normStatus(String(r[ci.st] || ""));
-    cfg[bl] = { status: st, pol: String(r[ci.pol] || "").trim().toUpperCase() };
+    cfg[bl] = { status: st, pol: String(r[ci.pol] || "").trim().toUpperCase(), dg: dgCol >= 0 && String(r[dgCol] || "").trim() !== "" };
   });
   if (!Object.keys(cfg).length) throw new Error("ไม่พบข้อมูลในคอลัมน์ A-C");
   listRows = cfg;
@@ -282,7 +287,7 @@ function run() {
   }
   const src = cutBuf, out = new Uint8Array(src);
   const shed = $("shed").value.trim().padEnd(4).slice(0, 4);
-  const rep = { bl: [], statusCount: {}, pg: [], notInList: [], noPol: [], layout: [], cut: cutInfo,
+  const rep = { bl: [], statusCount: {}, pg: [], notInList: [], noPol: [], layout: [], cut: cutInfo, sheds: {}, dg: [],
                 names: { changed: [], same: [], transit: [], differ: [] } };
   const lines = [];
   let cur = null, start = 0;
@@ -308,7 +313,11 @@ function run() {
       if (c.pol) { put(out, s + COL.POL, c.pol.padEnd(5).slice(0, 5)); put(out, s + COL.CTRY, c.pol.slice(0, 2)); }
       else rep.noPol.push(bl);
       put(out, s + COL.COPY, port || str(src, s + COL.PORT, s + COL.PORT + 5));
-      put(out, s + COL.SHED, shed);
+      const dg = !!c.dg || DG_RE.test(str(src, s + 3302, e)), orig = str(src, s + COL.PORT, s + COL.PORT + 5);
+      const sh = PORT_SHED[orig] || (orig === "THLCH" && dg ? SHED_LCH_DG : shed);
+      put(out, s + COL.SHED, sh);
+      rep.sheds[sh] = (rep.sheds[sh] || 0) + 1;
+      if (dg) rep.dg.push(bl);
       const m = /\d{11}KGM\d{8}PG\d{11}MTQ/.exec(str(src, s, e));
       if (m) { put(out, s + m.index + 22, "PX"); rep.pg.push(bl); }
       if (e - s >= NAME.N_FULL + NAME.W_FULL) {
@@ -316,7 +325,7 @@ function run() {
         put(out, s, nl);
         rep.names[res].push(bl);
       }
-      rep.bl.push({ bl, status: c.status, pol: c.pol, shed });
+      rep.bl.push({ bl, status: c.status, pol: c.pol, shed: sh, port: orig, dg });
       if (previews.length < 6) previews.push([s, Math.min(e, s + 70)]);
     } else if (cur && /^[A-Z]{4}\d{7} /.test(head)) {
       put(out, s + COL.STATUS, cur);
@@ -335,7 +344,7 @@ function render(rep, changed, previews, shed) {
   const nYes = rep.bl.filter(b => b.status).length;
   const statusTxt = Object.entries(rep.statusCount).map(([k, v]) => `${k.trim()} ×${v}`).join(", ") || "ไม่มี";
   $("stats").innerHTML = [
-    [rep.bl.length, "B/L ที่แก้"], [nYes, "B/L ที่มี Status"], [rep.bl.length, `Shed ${shed}`],
+    [rep.bl.length, "B/L ที่แก้"], [nYes, "B/L ที่มี Status"], ...Object.entries(rep.sheds).map(([k, v]) => [v, `Shed ${k}`]), [rep.dg.length, "B/L DG"],
     [Object.values(rep.statusCount).reduce((a, b) => a + b, 0), "บรรทัดตู้ที่เปลี่ยน Status"], [rep.pg.length, "PG → PX"], [changed, "ไบต์ที่เปลี่ยน"]
   ].map(([n, l]) => `<div class="stat"><div class="n">${n}</div><div class="l">${esc(l)}</div></div>`).join("");
   const cutTxt = rep.cut ? `ตัดออก ${rep.cut.removed} บรรทัด (${rep.cut.total} → ${rep.cut.kept} บรรทัด) · ` : "ไม่ได้ตัด (ไม่ได้ระบุ B/L) · ";
@@ -347,8 +356,8 @@ function render(rep, changed, previews, shed) {
   if (rep.names.differ.length) msgs += `<div class="warn">ชื่อ consignee ไม่ตรงกับ notify (คงเดิม ตรวจสอบ): ${rep.names.differ.join(", ")}</div>`;
   if (rep.layout.length) msgs += `<div class="warn">ตำแหน่งคอลัมน์ผิดปกติ ตรวจสอบก่อนใช้: ${rep.layout.join(", ")}</div>`;
   $("msgs").innerHTML = msgs;
-  $("tbl").innerHTML = "<tr><th>B/L No.</th><th>POL</th><th>Status</th><th>Shed</th></tr>" +
-    rep.bl.map(b => `<tr><td class="mono">${b.bl}</td><td class="mono">${esc(b.pol)}</td><td class="mono">${b.status ? esc(b.status).replace(/ /g, "&nbsp;") : "—"}</td><td class="mono">${b.shed}</td></tr>`).join("");
+  $("tbl").innerHTML = "<tr><th>B/L No.</th><th>POL</th><th>ท่า</th><th>Status</th><th>DG</th><th>Shed</th></tr>" +
+    rep.bl.map(b => `<tr><td class="mono">${b.bl}</td><td class="mono">${esc(b.pol)}</td><td class="mono">${esc(b.port)}</td><td class="mono">${b.status ? esc(b.status).replace(/ /g, "&nbsp;") : "—"}</td><td class="mono">${b.dg ? "DG" : ""}</td><td class="mono">${esc(b.shed)}</td></tr>`).join("");
   $("preview").innerHTML = previews.map(([s, e]) => {
     let h = ""; for (let i = s; i < e; i++) { const ch = esc(String.fromCharCode(outBytes[i])); h += cutBuf[i] !== outBytes[i] ? `<mark>${ch}</mark>` : ch; }
     return h;
@@ -373,7 +382,7 @@ $("clear").addEventListener("click", () => {
 $("dl").addEventListener("click", () => {
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([outBytes], { type: "text/plain" }));
-  a.download = "MMAN_VN.txt"; a.click();
+  a.download = "MMAN_LCH.txt"; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 });
 </script>
