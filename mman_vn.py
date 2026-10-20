@@ -90,7 +90,13 @@ def main():
     print(f"B/L lines edited : {rep['bl_lines']}  (shed {a.shed}, with Status: {len(rep['shed_yes'])})")
     print("Status set       : " + (", ".join(f"{k!r} x{v}" for k, v in rep["status_lines"].items()) or "none"))
     print(f"PG -> PX         : {rep['pg_to_px'] or 'none'}")
+    print(f"Port (col 41-45) : {rep['port']}  (port of most B/Ls; col 46-50 kept as in the file)")
+    print(f"Names from 1764  : changed {rep['names']['changed'] or 'none'}, already same {len(rep['names']['same'])}")
+    if rep["names"]["transit"]:
+        print(f"Names kept (TRANSIT/TRANSHIPMENT): {rep['names']['transit']}")
     print(f"Size / changed   : {rep['size']} bytes, {rep['bytes_changed']} bytes changed")
+    if rep["names"]["differ"]:
+        print(f"WARNING names kept, consignee is not the notify name: {rep['names']['differ']}")
     for key, label in (("not_in_list", "B/L NOT in list (untouched)"), ("no_pol", "B/L without POL"),
                        ("layout_warn", "Layout warning (check columns)")):
         if rep[key]:

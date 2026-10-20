@@ -20,14 +20,48 @@ import pandas as pd
 
 ENC = "latin-1"          # byte-for-byte safe; the file is fixed-width, never change its length
 COL_POL = 35             # 1. POL (5 chars)
-COL_COPY = 40            # 2. copy of col 45-49 (THBKK)
-COL_PORT = 45            # 3. original THBKK - unchanged
+COL_COPY = 40            # 2. port of discharge = the port most B/Ls have in col 45-49 (THBKK, THLCH)
+COL_PORT = 45            # 3. original port (THBKK, THLCH, THLKR...) - unchanged
 COL_SHED = 50            # 4. shed code (4 chars)
 COL_CTRY = 843           # 5. first 2 letters of POL (replaces TH)
 COL_STATUS = 17          # 6. status on container lines ("8  N" -> "9  N")
+# 7. names: consignee name (880), consignee name+address (973) and notify name (1671)
+#    take the name written at the notify name+address field (1764)
+COL_C_NAME, COL_C_FULL, COL_N_NAME, COL_N_FULL = 880, 973, 1671, 1764
+W_NAME, W_FULL = 93, 696
 BL_RE = re.compile(r"^HASL")
 CNTR_RE = re.compile(r"^[A-Z]{4}\d{7} ")
 UNIT_RE = re.compile(r"(\d{11}KGM\d{8})PG(\d{11}MTQ)")
+TRANSIT_RE = re.compile(r"\bTRANSIT\b|\bTRANS[\s-]?S?HIP", re.I)
+
+
+def fix_names(line: str):
+    """Copy the name at col 1764 into cols 880, 973 and 1671. Returns (line, result) where result is
+    'changed', 'same', 'transit' (TRANSIT/TRANSHIPMENT B/L, kept) or 'differ' (consignee is not the
+    notify party, kept). The name at 1764 is the part whose words match the consignee name at 880."""
+    old = line[COL_C_NAME:COL_C_NAME + W_NAME].rstrip()
+    if not old:
+        return line, "same"
+    if TRANSIT_RE.search(line):
+        return line, "transit"
+    target, full, new = " ".join(old.split()), line[COL_N_FULL:COL_N_FULL + W_FULL], None
+    for m in re.finditer(r"\S+", full):
+        words = " ".join(full[:m.end()].split())
+        if words == target:
+            new = full[:m.end()]
+            break
+        if len(words) >= len(target):
+            break
+    if new is None or len(new) > W_NAME:
+        return line, "differ"
+    out = set_at(line, COL_C_NAME, new.ljust(W_NAME))
+    out = set_at(out, COL_N_NAME, new.ljust(W_NAME))
+    field = out[COL_C_FULL:COL_C_FULL + W_FULL]
+    if field.startswith(old):
+        nf = new + field[len(old):]
+        if not nf[W_FULL:].strip():
+            out = set_at(out, COL_C_FULL, nf[:W_FULL].ljust(W_FULL))
+    return out, "changed" if out != line else "same"
 
 
 def map_columns(headers: list) -> list:
@@ -79,7 +113,10 @@ def change_status(mman: Path, lst: Path, out: Path, shed_yes: str, shed_no: str)
     parts = [p.decode(ENC) for p in re.split(rb"(\r\n|\n)", raw)]  # keep original line endings
 
     rep = {"bl_lines": 0, "shed_yes": [], "shed_no": [], "status_lines": Counter(),
-           "pg_to_px": [], "not_in_list": [], "no_pol": [], "layout_warn": []}
+           "pg_to_px": [], "not_in_list": [], "no_pol": [], "layout_warn": [],
+           "names": {"changed": [], "same": [], "transit": [], "differ": []}}
+    ports = Counter(p[COL_PORT:COL_PORT + 5] for p in parts if BL_RE.match(p) and p[COL_PORT:COL_PORT + 5].strip())
+    rep["port"] = port = ports.most_common(1)[0][0] if ports else ""
     cur = None
     for i, line in enumerate(parts):
         if BL_RE.match(line):
@@ -98,12 +135,15 @@ def change_status(mman: Path, lst: Path, out: Path, shed_yes: str, shed_no: str)
                 line = set_at(line, COL_CTRY, pol[:2])
             else:
                 rep["no_pol"].append(bl)
-            line = set_at(line, COL_COPY, line[COL_PORT:COL_PORT + 5])
+            line = set_at(line, COL_COPY, port or line[COL_PORT:COL_PORT + 5])
             line = set_at(line, COL_SHED, shed_yes if st else shed_no)
             m = UNIT_RE.search(line)
             if m:
                 line = line[:m.start()] + m.group(1) + "PX" + m.group(2) + line[m.end():]
                 rep["pg_to_px"].append(bl)
+            if len(line) >= COL_N_FULL + W_FULL:
+                line, res = fix_names(line)
+                rep["names"][res].append(bl)
             rep["shed_yes" if st else "shed_no"].append(bl)
             rep["bl_lines"] += 1
             parts[i] = line
@@ -152,7 +192,13 @@ def main():
           f"shed {a.shed_no}: {len(rep['shed_no'])})")
     print("Status set       : " + (", ".join(f"{k.strip()!r} x{v}" for k, v in rep["status_lines"].items()) or "none"))
     print(f"PG -> PX         : {rep['pg_to_px'] or 'none'}")
+    print(f"Port (col 41-45) : {rep['port']}")
+    print(f"Names from 1764  : changed {len(rep['names']['changed'])}, already same {len(rep['names']['same'])}")
+    if rep["names"]["transit"]:
+        print(f"Names kept (TRANSIT/TRANSHIPMENT): {rep['names']['transit']}")
     print(f"Size / changed   : {rep['size']} bytes, {rep['bytes_changed']} bytes changed")
+    if rep["names"]["differ"]:
+        print(f"WARNING names kept, consignee is not the notify name: {rep['names']['differ']}")
     for key, label in (("not_in_list", "B/L NOT in list (untouched)"), ("no_pol", "B/L without POL"),
                        ("layout_warn", "Layout warning (check columns)")):
         if rep[key]:

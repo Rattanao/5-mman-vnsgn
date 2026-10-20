@@ -1,6 +1,6 @@
 ---
 name: mman-vn
-description: "MMAN VN" for a Thailand import MMAN EDI manifest (fixed-width MMAN_*.txt). In one step it (1) keeps the PSKV header line, keeps only the B/L range the user names, "เริ่มต้นเก็บ B/L … ถึง B/L …" (e.g. HASLS21260801066 to HASLS21260801762, with the last B/L's sub-B/Ls; no end B/L = to the last line), cutting everything before and after, then (2) applies Change status from a B/L list (.xls/.xlsx/.csv with B/L No., Status, POL): POL + copy of the port (THBKK, THLCH, …), one shed code for every B/L (default 2813), POL country code in place of TH, new container status (e.g. 8  N -> 9  N), PG -> PX. Writes output/MMAN_VN.txt. Use whenever the user says "mman vn", "ตัดและ change status", "ตัด MMAN ตั้งแต่ BL ...", "ทำ mman_vn", or points to a folder with input/ holding an MMAN_*.txt plus a status list and names a starting B/L.
+description: "MMAN VN" for a Thailand import MMAN EDI manifest (fixed-width MMAN_*.txt). In one step it (1) keeps the PSKV header line, keeps only the B/L range the user names, "เริ่มต้นเก็บ B/L … ถึง B/L …" (e.g. HASLS21260801066 to HASLS21260801762, with the last B/L's sub-B/Ls; no end B/L = to the last line), cutting everything before and after, then (2) applies Change status from a B/L list (.xls/.xlsx/.csv with B/L No., Status, POL): POL + port of discharge (the port most B/Ls have; THLKR and other original ports stay), consignee/notify names taken from the notify name+address field (col 1764) except TRANSIT/TRANSHIPMENT B/Ls, one shed code for every B/L (default 2813), POL country code in place of TH, new container status (e.g. 8  N -> 9  N), PG -> PX. Writes output/MMAN_VN.txt. Use whenever the user says "mman vn", "ตัดและ change status", "ตัด MMAN ตั้งแต่ BL ...", "ทำ mman_vn", or points to a folder with input/ holding an MMAN_*.txt plus a status list and names a starting B/L.
 ---
 
 # MMAN VN (ตัด + Change status → output/MMAN_VN.txt)
@@ -30,12 +30,13 @@ broke CRLF).
 | # | Position | Value |
 |---|---|---|
 | 1 | col 35-39 | POL (from the list) |
-| 2 | col 40-44 | copy of #3 (e.g. THBKK, THLCH) |
-| 3 | col 45-49 | port from the original (THBKK, THLCH, …), unchanged |
+| 2 | col 40-44 | port of discharge = the port most B/Ls have in col 45-49 (e.g. THBKK, THLCH) |
+| 3 | col 45-49 | port from the original (THLCH, THLKR, …), never changed |
 | 4 | col 50-53 | shed: one code for every B/L, default `2813` (`--shed XXXX` to change; ask the user if unsure) |
 | 5 | col 843-844 | first 2 letters of POL (e.g. `VN`), replacing `TH` |
 | 6 | container line col 17 | Status from the list (`8  N` → `9  N`) |
 | – | package unit | `PG` → `PX` on every B/L |
+| 7 | col 880 (93), 973 (696), 1671 (93) | consignee name, consignee name+address, notify name = the name at the start of col 1764 (notify name+address), taken as the words that match the consignee name. Kept when the B/L line says TRANSIT/TRANSHIPMENT, or when the consignee name is not the notify name (WARNING) |
 
 **Leave the letter `O` before the description (col 3803) unchanged.**
 

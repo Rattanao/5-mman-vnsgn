@@ -144,12 +144,13 @@ details summary { cursor: pointer; color: var(--muted); }
       <p><b>ขั้นที่ 2 Change status</b> (กับ B/L ที่เหลือ)</p>
       <ol>
         <li>col 36-40 = POL (คอลัมน์ C)</li>
-        <li>col 41-45 = THBKK (เหมือนข้อ 3 เสมอ)</li>
-        <li>col 46-50 = THBKK ตามต้นฉบับ</li>
+        <li>col 41-45 = ท่าเรือของ B/L ส่วนใหญ่ในไฟล์ (เช่น THBKK, THLCH)</li>
+        <li>col 46-50 = ท่าเรือตามต้นฉบับ (THLCH, THLKR, …) คงเดิม ห้ามแก้</li>
         <li>col 51-54 = Shed ตามช่อง SHED NO. (ทุก B/L)</li>
         <li>col 844-845 = อักษร 2 ตัวแรกของ POL (แทน TH)</li>
         <li>บรรทัดตู้ = Status จากคอลัมน์ B (เช่น 8&nbsp;&nbsp;N → 9&nbsp;&nbsp;N) ว่าง = คงเดิม</li>
         <li>หน่วยหีบห่อ PG → PX ทุก B/L · ตัวอักษร O หน้า description คงเดิม</li>
+        <li>ชื่อ consignee (col 881, 974) และชื่อ notify (col 1672) = ชื่อที่ col 1765 ยกเว้น B/L TRANSIT/TRANSHIPMENT หรือชื่อ consignee ไม่ตรงกับ notify ให้คงเดิม</li>
       </ol>
       B/L ในคอลัมน์ A ครอบคลุม sub-B/L ด้วย (…462A, …462B) · หลังตัดแล้ว ความยาวบรรทัดและการขึ้นบรรทัด (CRLF) คงเดิมทุกไบต์
     </details>
@@ -158,6 +159,34 @@ details summary { cursor: pointer; color: var(--muted); }
 
 <script>
 const COL = { POL: 35, COPY: 40, PORT: 45, SHED: 50, CTRY: 843, STATUS: 17 };
+// consignee name (880), consignee name+address (973), notify name (1671) <- name at notify name+address (1764)
+const NAME = { C_NAME: 880, C_FULL: 973, N_NAME: 1671, N_FULL: 1764, W: 93, W_FULL: 696 };
+const TRANSIT_RE = /\bTRANSIT\b|\bTRANS[\s-]?S?HIP/i;
+const words = t => t.trim().split(/\s+/).filter(Boolean).join(" ");
+const setAt = (t, pos, v) => t.slice(0, pos) + v + t.slice(pos + v.length);
+
+// returns [line, result]: changed / same / transit (kept) / differ (consignee is not the notify name, kept)
+function fixNames(line) {
+  const old = line.slice(NAME.C_NAME, NAME.C_NAME + NAME.W).trimEnd();
+  if (!old) return [line, "same"];
+  if (TRANSIT_RE.test(line)) return [line, "transit"];
+  const target = words(old), full = line.slice(NAME.N_FULL, NAME.N_FULL + NAME.W_FULL);
+  let nw = null;
+  for (const m of full.matchAll(/\S+/g)) {
+    const w = words(full.slice(0, m.index + m[0].length));
+    if (w === target) { nw = full.slice(0, m.index + m[0].length); break; }
+    if (w.length >= target.length) break;
+  }
+  if (nw === null || nw.length > NAME.W) return [line, "differ"];
+  let out = setAt(line, NAME.C_NAME, nw.padEnd(NAME.W));
+  out = setAt(out, NAME.N_NAME, nw.padEnd(NAME.W));
+  const field = out.slice(NAME.C_FULL, NAME.C_FULL + NAME.W_FULL);
+  if (field.startsWith(old)) {
+    const nf = nw + field.slice(old.length);
+    if (!nf.slice(NAME.W_FULL).trim()) out = setAt(out, NAME.C_FULL, nf.slice(0, NAME.W_FULL).padEnd(NAME.W_FULL));
+  }
+  return [out, out === line ? "same" : "changed"];
+}
 let txtBuf = null, listRows = null, outBytes = null, cutBuf = null;
 const $ = id => document.getElementById(id);
 
@@ -253,7 +282,8 @@ function run() {
   }
   const src = cutBuf, out = new Uint8Array(src);
   const shed = $("shed").value.trim().padEnd(4).slice(0, 4);
-  const rep = { bl: [], statusCount: {}, pg: [], notInList: [], noPol: [], layout: [], cut: cutInfo };
+  const rep = { bl: [], statusCount: {}, pg: [], notInList: [], noPol: [], layout: [], cut: cutInfo,
+                names: { changed: [], same: [], transit: [], differ: [] } };
   const lines = [];
   let cur = null, start = 0;
   for (let i = 0; i <= src.length; i++) {
@@ -262,6 +292,11 @@ function run() {
       lines.push([start, end]); start = i + 1;
     }
   }
+  // port of discharge = the port most B/Ls have in col 46-50 (THBKK, THLCH); THLKR and others stay in col 46-50
+  const ports = {};
+  for (const [s, e] of lines) if (str(src, s, s + 4) === "HASL") { const p = str(src, s + COL.PORT, s + COL.PORT + 5); if (p.trim()) ports[p] = (ports[p] || 0) + 1; }
+  const port = Object.keys(ports).sort((a, b) => ports[b] - ports[a])[0] || "";
+  rep.port = port;
   const previews = [];
   for (const [s, e] of lines) {
     const head = str(src, s, Math.min(e, s + 20));
@@ -272,10 +307,15 @@ function run() {
       if (e - s < COL.CTRY + 2 || !str(src, s + COL.PORT, s + COL.PORT + 5).trim() || str(src, s + COL.POL, s + COL.COPY).trim()) rep.layout.push(bl);
       if (c.pol) { put(out, s + COL.POL, c.pol.padEnd(5).slice(0, 5)); put(out, s + COL.CTRY, c.pol.slice(0, 2)); }
       else rep.noPol.push(bl);
-      put(out, s + COL.COPY, str(src, s + COL.PORT, s + COL.PORT + 5));
+      put(out, s + COL.COPY, port || str(src, s + COL.PORT, s + COL.PORT + 5));
       put(out, s + COL.SHED, shed);
       const m = /\d{11}KGM\d{8}PG\d{11}MTQ/.exec(str(src, s, e));
       if (m) { put(out, s + m.index + 22, "PX"); rep.pg.push(bl); }
+      if (e - s >= NAME.N_FULL + NAME.W_FULL) {
+        const [nl, res] = fixNames(str(out, s, e));
+        put(out, s, nl);
+        rep.names[res].push(bl);
+      }
       rep.bl.push({ bl, status: c.status, pol: c.pol, shed });
       if (previews.length < 6) previews.push([s, Math.min(e, s + 70)]);
     } else if (cur && /^[A-Z]{4}\d{7} /.test(head)) {
@@ -302,6 +342,9 @@ function render(rep, changed, previews, shed) {
   let msgs = `<div class="okmsg">${cutTxt}ขนาดไฟล์ ${outBytes.length.toLocaleString()} ไบต์ · Status: ${esc(statusTxt)}${rep.pg.length ? " · PG→PX: " + rep.pg.join(", ") : ""}</div>`;
   if (rep.notInList.length) msgs += `<div class="warn">B/L ไม่อยู่ในรายการ (ไม่ได้แก้): ${rep.notInList.join(", ")}</div>`;
   if (rep.noPol.length) msgs += `<div class="warn">B/L ไม่มี POL: ${rep.noPol.join(", ")}</div>`;
+  msgs += `<div class="okmsg">ท่าเรือ col 41-45: ${esc(rep.port || "-")} · ชื่อจาก col 1765: แก้ ${rep.names.changed.length} B/L${rep.names.changed.length ? " (" + rep.names.changed.join(", ") + ")" : ""} · ตรงอยู่แล้ว ${rep.names.same.length} B/L</div>`;
+  if (rep.names.transit.length) msgs += `<div class="warn">B/L TRANSIT/TRANSHIPMENT ชื่อคงเดิม: ${rep.names.transit.join(", ")}</div>`;
+  if (rep.names.differ.length) msgs += `<div class="warn">ชื่อ consignee ไม่ตรงกับ notify (คงเดิม ตรวจสอบ): ${rep.names.differ.join(", ")}</div>`;
   if (rep.layout.length) msgs += `<div class="warn">ตำแหน่งคอลัมน์ผิดปกติ ตรวจสอบก่อนใช้: ${rep.layout.join(", ")}</div>`;
   $("msgs").innerHTML = msgs;
   $("tbl").innerHTML = "<tr><th>B/L No.</th><th>POL</th><th>Status</th><th>Shed</th></tr>" +
