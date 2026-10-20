@@ -40,6 +40,11 @@ TRANSIT_RE = re.compile(r"TRANSIT\b|\bTRANS[\s-]?S?HIP", re.I)   # also "INTRANS
 # 8. TRANSIT/TRANSHIPMENT: notify country (col 1669, "TH") = destination country, found in the
 #    consignee name+address (col 973), else in the description ("... TO LAOS ...")
 COL_N_CTRY = 1669
+# 9. TRANSIT/TRANSHIPMENT: the code before the description (col 3803, normally "O"):
+#    TRANSHIPMENT = 3, TRANSIT = 7, TRANSIT to LAOS = the "CARGO MOVEMENT = L / 7" written in the B/L (7 if none)
+COL_MOVE = 3803
+TRANSHIP_RE = re.compile(r"\bTRANS[\s-]?S?HIP", re.I)
+MOVEMENT_RE = re.compile(r"MOVEMENT\s*[=:]?\s*([L7])\b", re.I)
 DEST_CTRY = [("LA", r"\bLAOS?\b|\bLAO\s*P\.?\s*D\.?\s*R|\bVIENTIANE\b"), ("MM", r"\bMYANMAR\b|\bBURMA\b|\bYANGON\b"),
              ("KH", r"\bCAMBODIA\b|\bPHNOM\s*PENH\b"), ("CN", r"\bCHINA\b"), ("PG", r"\bPAPUA\s+NEW\s+GUINEA\b"),
              ("MY", r"\bMALAYSIA\b")]
@@ -55,6 +60,16 @@ def dest_country(line: str):
     return desc[0][1] if desc else None
 
 
+def transit_move(line: str, dest):
+    """Code for col 3803 of a TRANSIT/TRANSHIPMENT B/L."""
+    if TRANSHIP_RE.search(line):
+        return "3"
+    if dest == "LA":
+        m = MOVEMENT_RE.search(line[3302:])
+        return m.group(1).upper() if m else "7"
+    return "7"
+
+
 def fix_names(line: str):
     """Copy the name at col 1764 into cols 880, 973 and 1671 with single spaces only.
     Returns (line, result) where result is
@@ -65,6 +80,7 @@ def fix_names(line: str):
         return line, "same"
     if TRANSIT_RE.search(line):
         code = dest_country(line)
+        line = set_at(line, COL_MOVE, transit_move(line, code))
         return (set_at(line, COL_N_CTRY, code) if code else line), "transit"
     target, full, new = " ".join(old.split()), line[COL_N_FULL:COL_N_FULL + W_FULL], None
     for m in re.finditer(r"\S+", full):
@@ -188,7 +204,7 @@ def change_status(mman: Path, lst: Path, out: Path, shed: str) -> dict:
                 if res == "transit":
                     code = line[COL_N_CTRY:COL_N_CTRY + 2]
                     if code != "TH":
-                        rep["transit_ctry"].append(f"{bl}={code}")
+                        rep["transit_ctry"].append(f"{bl}={code} move {line[COL_MOVE]}")
                     else:
                         rep["transit_no_ctry"].append(bl)
             if st:
