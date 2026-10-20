@@ -36,7 +36,7 @@ broke CRLF).
 | 5 | col 843-844 | first 2 letters of POL (e.g. `VN`), replacing `TH` |
 | 6 | container line col 17 | Status from the list (`8  N` → `9  N`) |
 | – | package unit | `PG` → `PX` on every B/L |
-| 7 | col 880 (93), 973 (696), 1671 (93) | consignee name, consignee name+address, notify name = the name at the start of col 1764 (notify name+address), taken as the words that match the consignee name, written with single spaces only. Kept when the B/L line says TRANSIT/TRANSHIPMENT, or when the consignee name is not the notify name (WARNING) |
+| 7 | col 880 (70), 973 (696), 1671 (70); the tax ID + branch after each 70-char name (col 950-972, 1741-1763) is never touched | consignee name, consignee name+address, notify name = the name at the start of col 1764 (notify name+address), taken as the words that match the consignee name, written with single spaces only. Kept when the B/L line says TRANSIT/TRANSHIPMENT, or when the consignee name is not the notify name (WARNING) |
 | 8 | col 1669-1670 | TRANSIT/TRANSHIPMENT B/L (also "INTRANSIT"): the notify country `TH` becomes the destination country: LA (LAO/LAOS/VIENTIANE), MM (MYANMAR/YANGON), KH (CAMBODIA/PHNOM PENH), CN (CHINA), PG (PAPUA NEW GUINEA), MY (MALAYSIA); last mention in the consignee name+address (col 973), else first mention in the description. None found = TH kept + WARNING |
 | 9 | col 3803 | the code before the description: TRANSHIPMENT `3`; TRANSIT `7`; TRANSIT to LAOS = the `CARGO MOVEMENT = L` / `7` written in the B/L (none = `7`) |
 

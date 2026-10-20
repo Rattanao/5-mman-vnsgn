@@ -162,7 +162,7 @@ details summary { cursor: pointer; color: var(--muted); }
 <script>
 const COL = { POL: 35, COPY: 40, PORT: 45, SHED: 50, CTRY: 843, STATUS: 17 };
 // consignee name (880), consignee name+address (973), notify name (1671) <- name at notify name+address (1764)
-const NAME = { C_NAME: 880, C_FULL: 973, N_NAME: 1671, N_FULL: 1764, W: 93, W_FULL: 696 };
+const NAME = { C_NAME: 880, C_FULL: 973, N_NAME: 1671, N_FULL: 1764, W: 70, W_FULL: 696 };  // name = 70 chars; tax ID + branch follow, never touched
 // shed by the original port (col 46-50); THLCH DG (UN/CLASS) = 2826; the rest = SHED NO.
 const PORT_SHED = { THBMT: "0110", THSCT: "0302", THLKR: "0332", THUCT: "0113" }, SHED_LCH_DG = "2826";
 const DG_RE = /\bUN\s?(?:NO\.?\s?)?\d{4}\b|\bIMO\b|\bIMDG\b|\bCLASS\s?\d/i;

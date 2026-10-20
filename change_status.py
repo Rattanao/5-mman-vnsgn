@@ -28,7 +28,7 @@ COL_STATUS = 17          # 6. status on container lines ("8  N" -> "9  N")
 # 7. names: consignee name (880), consignee name+address (973) and notify name (1671)
 #    take the name written at the notify name+address field (1764)
 COL_C_NAME, COL_C_FULL, COL_N_NAME, COL_N_FULL = 880, 973, 1671, 1764
-W_NAME, W_FULL = 93, 696
+W_NAME, W_FULL = 70, 696   # name = 70 chars (880-949); 950-972 holds tax ID + branch, never touched
 BL_RE = re.compile(r"^HASL")
 CNTR_RE = re.compile(r"^[A-Z]{4}\d{7} ")
 UNIT_RE = re.compile(r"(\d{11}KGM\d{8})PG(\d{11}MTQ)")
