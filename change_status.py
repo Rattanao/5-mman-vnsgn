@@ -40,6 +40,9 @@ TRANSIT_RE = re.compile(r"TRANSIT\b|\bTRANS[\s-]?S?HIP", re.I)   # also "INTRANS
 # 8. TRANSIT/TRANSHIPMENT: notify country (col 1669, "TH") = destination country, found in the
 #    consignee name+address (col 973), else in the description ("... TO LAOS ...")
 COL_N_CTRY = 1669
+# 10. every B/L except TRANSIT/TRANSHIPMENT: blank the notify tax ID and the address fields of the
+#     consignee and the notify party (the consignee tax ID at 950 and both branch codes stay)
+CLEAR = [(1741, 13), (1415, 254), (2206, 254)]   # notify tax ID, consignee address, notify address
 # 9. TRANSIT/TRANSHIPMENT: the code before the description (col 3803, normally "O"):
 #    TRANSHIPMENT = 3, TRANSIT = 7, TRANSIT to LAOS = the "CARGO MOVEMENT = L / 7" written in the B/L (7 if none)
 COL_MOVE = 3803
@@ -166,7 +169,7 @@ def change_status(mman: Path, lst: Path, out: Path, shed: str) -> dict:
 
     rep = {"bl_lines": 0, "sheds": Counter(), "dg": [], "with_status": [], "status_lines": Counter(),
            "pg_to_px": [], "not_in_list": [], "no_pol": [], "layout_warn": [],
-           "names": {"changed": [], "same": [], "transit": [], "differ": []}, "transit_ctry": [], "transit_no_ctry": []}
+           "names": {"changed": [], "same": [], "transit": [], "differ": []}, "transit_ctry": [], "transit_no_ctry": [], "cleared": []}
     ports = Counter(p[COL_PORT:COL_PORT + 5] for p in parts if BL_RE.match(p) and p[COL_PORT:COL_PORT + 5].strip())
     rep["port"] = port = ports.most_common(1)[0][0] if ports else ""
     cur = None
@@ -201,6 +204,12 @@ def change_status(mman: Path, lst: Path, out: Path, shed: str) -> dict:
             if len(line) >= COL_N_FULL + W_FULL:
                 line, res = fix_names(line)
                 rep["names"][res].append(bl)
+                if res != "transit":
+                    cleared = line
+                    for pos, width in CLEAR:
+                        line = set_at(line, pos, " " * width)
+                    if line != cleared:
+                        rep["cleared"].append(bl)
                 if res == "transit":
                     code = line[COL_N_CTRY:COL_N_CTRY + 2]
                     if code != "TH":

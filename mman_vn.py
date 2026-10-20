@@ -95,6 +95,7 @@ def main():
     print(f"PG -> PX         : {rep['pg_to_px'] or 'none'}")
     print(f"Port (col 41-45) : {rep['port']}  (port of most B/Ls; col 46-50 kept as in the file)")
     print(f"Names from 1764  : changed {rep['names']['changed'] or 'none'}, already same {len(rep['names']['same'])}")
+    print(f"Tax ID / address : cleared on {rep['cleared'] or 'none'}")
     if rep["names"]["transit"]:
         print(f"Names kept (TRANSIT/TRANSHIPMENT): {rep['names']['transit']}  country: {rep['transit_ctry']}")
     if rep["transit_no_ctry"]:

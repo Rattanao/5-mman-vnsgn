@@ -152,6 +152,7 @@ details summary { cursor: pointer; color: var(--muted); }
         <li>หน่วยหีบห่อ PG → PX ทุก B/L · ตัวอักษร O หน้า description คงเดิม (ยกเว้น TRANSIT/TRANSHIPMENT ตามข้อด้านล่าง)</li>
         <li>ชื่อ consignee (col 881, 974) และชื่อ notify (col 1672) = ชื่อที่ col 1765 เว้นวรรค 1 เคาะเท่านั้น ยกเว้น B/L TRANSIT/TRANSHIPMENT หรือชื่อ consignee ไม่ตรงกับ notify ให้คงเดิม</li>
         <li>B/L TRANSIT/TRANSHIPMENT: col 1670-1671 (TH หน้าชื่อ notify) = ประเทศปลายทาง LA=LAO · MM=MYANMAR · KH=CAMBODIA · CN=CHINA · PG=PAPUA NEW GUINEA · MY=MALAYSIA</li>
+        <li>ทุก B/L ยกเว้น TRANSIT/TRANSHIPMENT: ลบเลขภาษี notify (col 1742-1754) และที่อยู่ consignee (col 1416-1669) / notify (col 2207-2460) · เลขภาษี consignee และรหัสสาขาคงไว้</li>
         <li>B/L TRANSIT/TRANSHIPMENT: col 3804 (ตัวอักษรหน้า description) TRANSIT = 7 · TRANSIT ไป LAOS = ตาม "CARGO MOVEMENT = L / 7" ใน MMAN (ไม่มี = 7) · TRANSHIPMENT = 3 · B/L อื่น O คงเดิม</li>
       </ol>
       B/L ในคอลัมน์ A ครอบคลุม sub-B/L ด้วย (…462A, …462B) · หลังตัดแล้ว ความยาวบรรทัดและการขึ้นบรรทัด (CRLF) คงเดิมทุกไบต์
@@ -170,6 +171,9 @@ const TRANSIT_RE = /TRANSIT\b|\bTRANS[\s-]?S?HIP/i;  // also "INTRANSIT"
 // TRANSIT/TRANSHIPMENT: notify country (col 1669, "TH") = destination country,
 // found in the consignee name+address (col 973, last mention), else in the description (first mention)
 const N_CTRY = 1669;
+// every B/L except TRANSIT/TRANSHIPMENT: blank the notify tax ID and the consignee / notify address fields
+// (the consignee tax ID at 950 and both branch codes stay)
+const CLEAR = [[1741, 13], [1415, 254], [2206, 254]];
 // TRANSIT/TRANSHIPMENT: code before the description (col 3803, normally "O"):
 // TRANSHIPMENT = 3, TRANSIT = 7, TRANSIT to LAOS = the "CARGO MOVEMENT = L / 7" in the B/L (7 if none)
 const MOVE = 3803, TRANSHIP_RE = /\bTRANS[\s-]?S?HIP/i, MOVEMENT_RE = /MOVEMENT\s*[=:]?\s*([L7])\b/i;
@@ -312,7 +316,7 @@ function run() {
   }
   const src = cutBuf, out = new Uint8Array(src);
   const shed = $("shed").value.trim().padEnd(4).slice(0, 4);
-  const rep = { bl: [], statusCount: {}, pg: [], notInList: [], noPol: [], layout: [], cut: cutInfo, sheds: {}, dg: [], transitCtry: [], transitNoCtry: [],
+  const rep = { bl: [], statusCount: {}, pg: [], notInList: [], noPol: [], layout: [], cut: cutInfo, sheds: {}, dg: [], transitCtry: [], transitNoCtry: [], cleared: [],
                 names: { changed: [], same: [], transit: [], differ: [] } };
   const lines = [];
   let cur = null, start = 0;
@@ -349,6 +353,11 @@ function run() {
         const [nl, res] = fixNames(str(out, s, e));
         put(out, s, nl);
         rep.names[res].push(bl);
+        if (res !== "transit") {
+          let cl = nl;
+          for (const [pos, w] of CLEAR) cl = setAt(cl, pos, " ".repeat(w));
+          if (cl !== nl) { put(out, s, cl); rep.cleared.push(bl); }
+        }
         if (res === "transit") { const c = nl.slice(N_CTRY, N_CTRY + 2); if (c !== "TH") rep.transitCtry.push(`${bl}=${c} (${nl[MOVE]})`); else rep.transitNoCtry.push(bl); }
       }
       rep.bl.push({ bl, status: c.status, pol: c.pol, shed: sh, port: orig, dg });
@@ -379,6 +388,7 @@ function render(rep, changed, previews, shed) {
   if (rep.noPol.length) msgs += `<div class="warn">B/L ไม่มี POL: ${rep.noPol.join(", ")}</div>`;
   msgs += `<div class="okmsg">ท่าเรือ col 41-45: ${esc(rep.port || "-")} · ชื่อจาก col 1765: แก้ ${rep.names.changed.length} B/L${rep.names.changed.length ? " (" + rep.names.changed.join(", ") + ")" : ""} · ตรงอยู่แล้ว ${rep.names.same.length} B/L</div>`;
   if (rep.names.transit.length) msgs += `<div class="warn">B/L TRANSIT/TRANSHIPMENT ชื่อคงเดิม: ${rep.names.transit.join(", ")}${rep.transitCtry.length ? " · ประเทศปลายทาง col 1670 (และรหัสหน้า description): " + rep.transitCtry.join(", ") : ""}</div>`;
+  if (rep.cleared.length) msgs += `<div class="okmsg">ลบเลขภาษี notify และที่อยู่ consignee / notify: ${rep.cleared.join(", ")}</div>`;
   if (rep.transitNoCtry.length) msgs += `<div class="warn">B/L TRANSIT ไม่พบประเทศปลายทาง (คง TH ไว้ ตรวจสอบ): ${rep.transitNoCtry.join(", ")}</div>`;
   if (rep.names.differ.length) msgs += `<div class="warn">ชื่อ consignee ไม่ตรงกับ notify (คงเดิม ตรวจสอบ): ${rep.names.differ.join(", ")}</div>`;
   if (rep.layout.length) msgs += `<div class="warn">ตำแหน่งคอลัมน์ผิดปกติ ตรวจสอบก่อนใช้: ${rep.layout.join(", ")}</div>`;
