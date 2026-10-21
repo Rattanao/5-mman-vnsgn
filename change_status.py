@@ -35,6 +35,7 @@ UNIT_RE = re.compile(r"(\d{11}KGM\d{8})PG(\d{11}MTQ)")
 # 4. shed by the original port (col 45-49); THLCH DG (UN/CLASS) gets SHED_LCH_DG, the rest the SHED NO. given
 PORT_SHED = {"THBMT": "0110", "THSCT": "0302", "THLKR": "0332", "THUCT": "0113"}
 SHED_LCH_DG = "2826"
+SHED_BKK_LAOS = "0124"   # THBKK B/L going to LAOS (destination country LA) - every time
 DG_RE = re.compile(r"\bUN\s?(?:NO\.?\s?)?\d{4}\b|\bIMO\b|\bIMDG\b|\bCLASS\s?\d", re.I)
 TRANSIT_RE = re.compile(r"TRANSIT\b|\bTRANS[\s-]?S?HIP", re.I)   # also "INTRANSIT"
 # 8. TRANSIT/TRANSHIPMENT: notify country (col 1669, "TH") = destination country, found in the
@@ -173,6 +174,8 @@ def set_at(s: str, pos: int, txt: str) -> str:
 
 def shed_for(line: str, dg: bool, shed: str) -> str:
     port = line[COL_PORT:COL_PORT + 5]
+    if port == "THBKK" and dest_country(line) == "LA":
+        return SHED_BKK_LAOS
     if port in PORT_SHED:
         return PORT_SHED[port]
     if port == "THLCH" and dg:
