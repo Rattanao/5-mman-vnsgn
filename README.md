@@ -26,7 +26,7 @@
 | 5 | col 844-845 | อักษร 2 ตัวแรกของ POL เช่น `VN` (แทน `TH`) |
 | 6 | บรรทัดตู้ col 18-21 | Status จากไฟล์รายการ เช่น `8  N` → `9  N` (ว่าง = คงเดิม) |
 | – | หน่วยหีบห่อ | `PG` → `PX` ทุก B/L |
-| 7 | col 881, 974, 1672 | ชื่อ consignee และชื่อ notify = ชื่อที่ col 1765 เว้นวรรค 1 เคาะเท่านั้น (ยกเว้น B/L TRANSIT/TRANSHIPMENT หรือชื่อ consignee ไม่ตรงกับ notify → คงเดิม) |
+| 7 | col 881, 974, 1765 | ชื่อ consignee และชื่อ notify = ตามชื่อ notify ที่ col 1672 (TH+ชื่อ) เสมอ เว้นวรรค 1 เคาะเท่านั้น ทุก B/L · ที่อยู่ต่อท้ายชื่อคงไว้ · ยกเว้น B/L TRANSIT/TRANSHIPMENT ห้ามแก้ คงเดิม |
 | 8 | col 1670-1671 | B/L TRANSIT/TRANSHIPMENT (รวม "INTRANSIT"): `TH` หน้าชื่อ notify = ประเทศปลายทาง `LA` LAO · `MM` MYANMAR · `KH` CAMBODIA · `CN` CHINA · `PG` PAPUA NEW GUINEA · `MY` MALAYSIA (ดูจากที่อยู่ consignee ก่อน แล้วจึงดูจาก description) |
 | 9 | col 3804 (ตัวอักษรหน้า description) | B/L อื่น `O` คงเดิม · TRANSIT = `7` · TRANSIT ไป LAOS = ตาม `CARGO MOVEMENT = L` หรือ `7` ใน MMAN (ไม่มี = `7`) · TRANSHIPMENT = `3` |
 | 10 | col 1742-1754, 1416-1669, 2207-2460 | ทุก B/L ยกเว้น TRANSIT/TRANSHIPMENT: ลบเลขภาษี notify, ที่อยู่ consignee และที่อยู่ notify (เลขภาษี consignee และรหัสสาขาคงไว้) |
