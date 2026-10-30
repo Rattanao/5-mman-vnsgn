@@ -38,7 +38,7 @@ broke CRLF).
 | – | package unit | `PG` → `PX` on every B/L |
 | 7 | col 880 (70), 973 (696), 1764 (696); the tax ID + branch after each 70-char name (col 950-972, 1741-1763) is never touched | consignee name, name part of consignee name+address, name part of notify name+address = **always the notify name at col 1671 (after "TH")**, single spaces only, every B/L; addresses after the name stay. TRANSIT/TRANSHIPMENT B/Ls keep their names (user rule 2026-10-21) |
 | 8 | col 1669-1670 | TRANSIT/TRANSHIPMENT B/L (also "INTRANSIT"): the notify country `TH` becomes the destination country: LA (LAO/LAOS/VIENTIANE), MM (MYANMAR/YANGON), KH (CAMBODIA/PHNOM PENH), CN (CHINA), PG (PAPUA NEW GUINEA), MY (MALAYSIA); last mention in the consignee name+address (col 973), else first mention in the description. None found = TH kept + WARNING |
-| 9 | col 3803 | the code before the description: TRANSHIPMENT `3`; TRANSIT `7`; TRANSIT to LAOS = the `CARGO MOVEMENT = L` / `7` written in the B/L (none = `7`) |
+| 9 | col 3803 | the code before the description: B/L with Status `9  N` (not TRANSIT/TRANSHIPMENT) `O` -> `5` (user rule 2026-10-30), other B/Ls keep `O`; TRANSHIPMENT `3`; TRANSIT `7`; TRANSIT to LAOS = the `CARGO MOVEMENT = L` / `7` written in the B/L (none = `7`) |
 | 10 | col 1741-1753, 1415-1668, 2206-2459 | every B/L except TRANSIT/TRANSHIPMENT: blank the notify tax ID, the consignee address and the notify address. The consignee tax ID (950-962) and both branch codes stay |
 
 **Leave the letter `O` before the description (col 3803) unchanged on every other B/L.**

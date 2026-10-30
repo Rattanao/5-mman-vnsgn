@@ -47,6 +47,7 @@ CLEAR = [(1741, 13), (1415, 254), (2206, 254)]   # notify tax ID, consignee addr
 # 9. TRANSIT/TRANSHIPMENT: the code before the description (col 3803, normally "O"):
 #    TRANSHIPMENT = 3, TRANSIT = 7, TRANSIT to LAOS = the "CARGO MOVEMENT = L / 7" written in the B/L (7 if none)
 COL_MOVE = 3803
+STATUS_O5 = "9  N"  # B/Ls with this Status get O -> 5 at COL_MOVE (not TRANSIT/TRANSHIPMENT)
 TRANSHIP_RE = re.compile(r"\bTRANS[\s-]?S?HIP", re.I)
 MOVEMENT_RE = re.compile(r"MOVEMENT\s*[=:]?\s*([L7])\b", re.I)
 DEST_CTRY = [("LA", r"\bLAOS?\b|\bLAO\s*P\.?\s*D\.?\s*R|\bVIENTIANE\b"), ("MM", r"\bMYANMAR\b|\bBURMA\b|\bYANGON\b"),
@@ -197,7 +198,7 @@ def change_status(mman: Path, lst: Path, out: Path, shed: str) -> dict:
 
     rep = {"bl_lines": 0, "sheds": Counter(), "dg": [], "with_status": [], "status_lines": Counter(),
            "pg_to_px": [], "not_in_list": [], "no_pol": [], "layout_warn": [],
-           "names": {"changed": [], "same": [], "transit": [], "differ": []}, "transit_ctry": [], "transit_no_ctry": [], "cleared": []}
+           "names": {"changed": [], "same": [], "transit": [], "differ": []}, "transit_ctry": [], "transit_no_ctry": [], "cleared": [], "o_to_5": []}
     ports = Counter(p[COL_PORT:COL_PORT + 5] for p in parts if BL_RE.match(p) and p[COL_PORT:COL_PORT + 5].strip())
     rep["port"] = port = ports.most_common(1)[0][0] if ports else ""
     cur = None
@@ -238,6 +239,9 @@ def change_status(mman: Path, lst: Path, out: Path, shed: str) -> dict:
                         line = set_at(line, pos, " " * width)
                     if line != cleared:
                         rep["cleared"].append(bl)
+                    if st == STATUS_O5 and line[COL_MOVE] == "O":
+                        line = set_at(line, COL_MOVE, "5")  # Status 9 N: letter O before the description -> 5
+                        rep["o_to_5"].append(bl)
                 if res == "transit":
                     code = line[COL_N_CTRY:COL_N_CTRY + 2]
                     if code != "TH":
@@ -298,6 +302,7 @@ def main():
         print(f"Names kept (TRANSIT/TRANSHIPMENT): {rep['names']['transit']}  country: {rep['transit_ctry']}")
     if rep["transit_no_ctry"]:
         print(f"WARNING TRANSIT without a known destination country (TH kept): {rep['transit_no_ctry']}")
+    print(f"O -> 5 (9 N)     : {rep['o_to_5'] or 'none'}")
     print(f"Size / changed   : {rep['size']} bytes, {rep['bytes_changed']} bytes changed")
     if rep["names"]["differ"]:
         print(f"WARNING names kept, no notify name at col 1672: {rep['names']['differ']}")
