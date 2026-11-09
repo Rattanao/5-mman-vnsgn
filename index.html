@@ -44,7 +44,10 @@ main { max-width: 1200px; margin: 0 auto; padding: 24px 28px 60px; }
 @media (max-width: 640px) { header.bar, main { padding-left: 16px; padding-right: 16px; } }
 .card { background: var(--card); border-radius: 10px; padding: 24px 26px; margin-bottom: 18px;
   box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 14px rgba(0,0,0,.04); }
-.form { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr auto; gap: 18px; align-items: end; }
+.form { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr .8fr .8fr auto; gap: 18px; align-items: end; }
+.fld select { width: 100%; font: 17px "Sarabun", sans-serif; padding: 9px 10px; border: 1px solid var(--line);
+  border-radius: 5px; background: var(--input-bg); color: var(--text); }
+.fld select:focus { outline: 2px solid var(--navy); outline-offset: -1px; }
 .form > * { min-width: 0; }
 @media (max-width: 1000px) { .form { grid-template-columns: 1fr; } .form button { width: 100%; } }
 @media (max-width: 640px) { .card { padding: 18px 16px; } }
@@ -90,7 +93,7 @@ details summary { cursor: pointer; color: var(--muted); }
 </head>
 <body>
 <header class="bar"><div class="brand"><span class="logo-badge"><img src="assets/hal-logo.png" alt="Heung A Line"></span><h1>MMAN LCH — ตัด B/L + Change Status → MMAN_LCH.txt</h1></div>
-  <div class="by">Project by Ms. Rattana Mudlae<br>Position Import DOC.<br><span style="opacity:.75;font-size:12px">เวอร์ชัน 30/10/2026 · 9 N: O → 5</span></div>
+  <div class="by">Project by Ms. Rattana Mudlae<br>Position Import DOC.<br><span style="opacity:.75;font-size:12px">เวอร์ชัน 09/11/2026 · POD THUCT</span></div>
 </header>
 <main>
   <div class="card">
@@ -114,6 +117,14 @@ details summary { cursor: pointer; color: var(--muted); }
         <input type="text" id="endBl" maxlength="35" placeholder="ว่าง = ถึงบรรทัดสุดท้าย" autocomplete="off" spellcheck="false">
       </div>
       <div class="fld">
+        <label class="lb" for="pod">POD</label>
+        <select id="pod">
+          <option value="THLCH">THLCH</option>
+          <option value="THBKK">THBKK</option>
+          <option value="THUCT">THUCT</option>
+        </select>
+      </div>
+      <div class="fld">
         <label class="lb" for="shed">SHED NO.</label>
         <div class="shed">
           <input id="shed" value="2813" maxlength="4" placeholder="2813">
@@ -124,7 +135,7 @@ details summary { cursor: pointer; color: var(--muted); }
         <button id="clear" class="ghost" type="button">ลบไฟล์</button>
       </div>
     </div>
-    <p class="note">เริ่มต้นเก็บ B/L … ถึง B/L: เก็บบรรทัด PSKV ไว้ แล้วเก็บเฉพาะตั้งแต่ B/L เริ่มต้นจนถึง B/L สุดท้ายที่กำหนด (รวม sub-B/L …A, …B และบรรทัดตู้ของ B/L นั้น) ที่เหลือตัดออก · เว้นว่างช่องเริ่มต้น = ตั้งแต่ B/L แรก · เว้นว่างช่องถึง = ถึงบรรทัดสุดท้าย · เว้นว่างทั้งสองช่อง = ไม่ตัด · SHED NO.: ใช้กับ THLCH ที่ไม่ใช่ DG (THLCH DG = 2826 · BMT 0110 · SCT 0302 · LKR 0332 · UCT 0113) · ประมวลผลในเบราว์เซอร์ ไม่มีการอัปโหลดไฟล์</p>
+    <p class="note">เริ่มต้นเก็บ B/L … ถึง B/L: เก็บบรรทัด PSKV ไว้ แล้วเก็บเฉพาะตั้งแต่ B/L เริ่มต้นจนถึง B/L สุดท้ายที่กำหนด (รวม sub-B/L …A, …B และบรรทัดตู้ของ B/L นั้น) ที่เหลือตัดออก · เว้นว่างช่องเริ่มต้น = ตั้งแต่ B/L แรก · เว้นว่างช่องถึง = ถึงบรรทัดสุดท้าย · เว้นว่างทั้งสองช่อง = ไม่ตัด · SHED NO.: ใช้กับ THLCH ที่ไม่ใช่ DG (THLCH DG = 2826 · BMT 0110 · SCT 0302 · LKR 0332 · UCT 0113) · POD: THLCH / THBKK ทำงานแบบเดิม (ล็อคไว้) · THUCT = ทุก B/L เปลี่ยน col 41-50 เป็น THUCTTHUCT และ SHED 0113 (ไฟล์มาเป็น THBKK) · ประมวลผลในเบราว์เซอร์ ไม่มีการอัปโหลดไฟล์</p>
   </div>
 
   <div class="card hidden" id="result">
@@ -346,7 +357,8 @@ function run() {
   const ports = {};
   for (const [s, e] of lines) if (str(src, s, s + 4) === "HASL") { const p = str(src, s + COL.PORT, s + COL.PORT + 5); if (p.trim()) ports[p] = (ports[p] || 0) + 1; }
   const port = Object.keys(ports).sort((a, b) => ports[b] - ports[a])[0] || "";
-  rep.port = port;
+  const force = $("pod").value === "THUCT" ? "THUCT" : "";  // THLCH / THBKK = automatic (locked)
+  rep.port = force || port;
   const previews = [];
   for (const [s, e] of lines) {
     const head = str(src, s, Math.min(e, s + 20));
@@ -357,8 +369,9 @@ function run() {
       if (e - s < COL.CTRY + 2 || !str(src, s + COL.PORT, s + COL.PORT + 5).trim() || str(src, s + COL.POL, s + COL.COPY).trim()) rep.layout.push(bl);
       if (c.pol) { put(out, s + COL.POL, c.pol.padEnd(5).slice(0, 5)); put(out, s + COL.CTRY, c.pol.slice(0, 2)); }
       else rep.noPol.push(bl);
-      put(out, s + COL.COPY, port || str(src, s + COL.PORT, s + COL.PORT + 5));
-      const dg = !!c.dg || DG_RE.test(str(src, s + 3302, e)), orig = str(src, s + COL.PORT, s + COL.PORT + 5);
+      if (force) { put(out, s + COL.PORT, force); put(out, s + COL.COPY, force); }
+      else put(out, s + COL.COPY, port || str(src, s + COL.PORT, s + COL.PORT + 5));
+      const dg = !!c.dg || DG_RE.test(str(src, s + 3302, e)), orig = str(out, s + COL.PORT, s + COL.PORT + 5);
       const sh = orig === "THBKK" && destCountry(str(src, s, e)) === "LA" ? SHED_BKK_LAOS
         : PORT_SHED[orig] || (orig === "THLCH" && dg ? SHED_LCH_DG : shed);
       put(out, s + COL.SHED, sh);

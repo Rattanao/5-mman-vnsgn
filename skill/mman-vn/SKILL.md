@@ -32,6 +32,7 @@ broke CRLF).
 | 1 | col 35-39 | POL (from the list) |
 | 2 | col 40-44 | port of discharge = the port most B/Ls have in col 45-49 (e.g. THBKK, THLCH) |
 | 3 | col 45-49 | port from the original (THLCH, THLKR, …), never changed |
+| POD | col 40-49 | `--pod THUCT` (job going to THUCT; the file arrives as THBKK): every B/L becomes `THUCTTHUCT`, shed `0113`. THLCH / THBKK = rows 2-3 unchanged (locked). Ask the user which POD when the list file name or the user mentions UCT |
 | 4 | col 50-53 | shed by the original port in col 45-49: THBMT `0110`, THSCT `0302`, THLKR `0332`, THUCT `0113`; THLCH DG `2826` (DG = the list's DG column is filled, or the B/L line has UN xxxx / IMO / IMDG / CLASS n); everything else `--shed` (default `2813`) |
 | 5 | col 843-844 | first 2 letters of POL (e.g. `VN`), replacing `TH` |
 | 6 | container line col 17 | Status from the list (`8  N` → `9  N`) |
@@ -47,7 +48,7 @@ broke CRLF).
 
 1. Run:
    ```bash
-   PYTHONIOENCODING=utf-8 python "<skill dir>/scripts/mman_vn.py" <first B/L> "<folder containing input>" [--to <last B/L>]
+   PYTHONIOENCODING=utf-8 python "<skill dir>/scripts/mman_vn.py" <first B/L> "<folder containing input>" [--to <last B/L>] [--pod THUCT]
    ```
    (If `python` is only the Microsoft Store alias, use `py` instead.)
    The result is always `output/MMAN_LCH.txt` in that folder (`-o name` to rename). The input

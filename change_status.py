@@ -191,7 +191,12 @@ def shed_for(line: str, dg: bool, shed: str) -> str:
     return shed
 
 
-def change_status(mman: Path, lst: Path, out: Path, shed: str) -> dict:
+# POD for the whole job: THLCH / THBKK = automatic as above (locked); THUCT = col 40-49 become THUCTTHUCT
+# on every B/L (the file arrives as THBKK), so the shed is THUCT's 0113
+POD_FORCE = {"THUCT"}
+
+
+def change_status(mman: Path, lst: Path, out: Path, shed: str, pod: str = "") -> dict:
     cfg = read_list(lst)
     raw = mman.read_bytes()
     parts = [p.decode(ENC) for p in re.split(rb"(\r\n|\n)", raw)]  # keep original line endings
@@ -201,6 +206,9 @@ def change_status(mman: Path, lst: Path, out: Path, shed: str) -> dict:
            "names": {"changed": [], "same": [], "transit": [], "differ": []}, "transit_ctry": [], "transit_no_ctry": [], "cleared": [], "o_to_5": []}
     ports = Counter(p[COL_PORT:COL_PORT + 5] for p in parts if BL_RE.match(p) and p[COL_PORT:COL_PORT + 5].strip())
     rep["port"] = port = ports.most_common(1)[0][0] if ports else ""
+    force = pod.upper() if pod.upper() in POD_FORCE else ""
+    if force:
+        rep["port"] = force
     cur = None
     for i, line in enumerate(parts):
         if BL_RE.match(line):
@@ -220,7 +228,11 @@ def change_status(mman: Path, lst: Path, out: Path, shed: str) -> dict:
                 line = set_at(line, COL_CTRY, pol[:2])
             else:
                 rep["no_pol"].append(bl)
-            line = set_at(line, COL_COPY, port or line[COL_PORT:COL_PORT + 5])
+            if force:
+                line = set_at(line, COL_PORT, force)
+                line = set_at(line, COL_COPY, force)
+            else:
+                line = set_at(line, COL_COPY, port or line[COL_PORT:COL_PORT + 5])
             sh = shed_for(line, dg, shed)
             line = set_at(line, COL_SHED, sh)
             rep["sheds"][sh] += 1
@@ -281,6 +293,7 @@ def main():
     ap.add_argument("paths", nargs="+")
     ap.add_argument("-o", "--output")
     ap.add_argument("--shed", default="2813", help="shed for THLCH (non-DG) and ports not in PORT_SHED")
+    ap.add_argument("--pod", default="", choices=["", "THLCH", "THBKK", "THUCT"], help="THUCT = every B/L THUCTTHUCT")
     a = ap.parse_args()
     if len(a.paths) == 1:
         mman, lst, out = find_inputs(Path(a.paths[0]))
@@ -289,7 +302,7 @@ def main():
         out = mman.parent / "MMAN_EDI.txt"
     if a.output:
         out = Path(a.output)
-    rep = change_status(mman, lst, out, a.shed)
+    rep = change_status(mman, lst, out, a.shed, a.pod)
 
     print(f"MMAN : {mman}\nLIST : {lst}\nOUT  : {out}")
     print(f"B/L lines edited : {rep['bl_lines']}  (shed " + ", ".join(f"{k} x{v}" for k, v in rep["sheds"].items()) + ")")

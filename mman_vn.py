@@ -66,6 +66,8 @@ def main():
     ap.add_argument("--to", default="", help="last B/L to keep (with its sub-B/Ls); default: to the last line")
     ap.add_argument("folder", nargs="?", default=".", help="folder holding input/ (default: current folder)")
     ap.add_argument("-o", default="MMAN_LCH.txt")
+    ap.add_argument("--pod", default="", choices=["", "THLCH", "THBKK", "THUCT"],
+                    help="POD of the job: THLCH / THBKK automatic (default); THUCT = every B/L THUCTTHUCT, shed 0113")
     ap.add_argument("--shed", default="2813", help="shed for THLCH non-DG and other ports (default 2813); "
                     "BMT 0110, SCT 0302, LKR 0332, UCT 0113 and THLCH DG 2826 are fixed")
     a = ap.parse_args()
@@ -82,7 +84,7 @@ def main():
     try:
         with os.fdopen(fd, "wb") as f:
             f.write(data)
-        rep = change_status(Path(tmp), lst, out, a.shed)
+        rep = change_status(Path(tmp), lst, out, a.shed, a.pod)
     finally:
         os.remove(tmp)
 
@@ -93,7 +95,8 @@ def main():
     print(f"DG B/L           : {rep['dg'] or 'none'}")
     print("Status set       : " + (", ".join(f"{k!r} x{v}" for k, v in rep["status_lines"].items()) or "none"))
     print(f"PG -> PX         : {rep['pg_to_px'] or 'none'}")
-    print(f"Port (col 41-45) : {rep['port']}  (port of most B/Ls; col 46-50 kept as in the file)")
+    print(f"Port (col 41-45) : {rep['port']}  " + ("(POD THUCT: col 41-50 = THUCTTHUCT on every B/L)" if a.pod == "THUCT"
+                                                     else "(port of most B/Ls; col 46-50 kept as in the file)"))
     print(f"Names from 1764  : changed {rep['names']['changed'] or 'none'}, already same {len(rep['names']['same'])}")
     print(f"Tax ID / address : cleared on {rep['cleared'] or 'none'}")
     if rep["names"]["transit"]:
