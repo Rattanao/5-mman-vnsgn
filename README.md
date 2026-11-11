@@ -1,7 +1,7 @@
 # MMAN VN — ตัด B/L + Change Status
 
 ตัดไฟล์ MMAN EDI (`MMAN_*.txt`) ให้เหลือเฉพาะ B/L ที่ต้องการ แล้วทำ Change status ต่อในขั้นตอนเดียว
-ได้ไฟล์ `MMAN_LCH.txt` (แบบฟอร์มสำหรับงาน THLCH)
+ได้ไฟล์ชื่อตาม POD: `MMAN_LCH.txt` / `MMAN_BKK.txt` / `MMAN_UCT.txt`
 
 ใช้ได้ 3 แบบ: หน้าเว็บ, คำสั่ง Python, หรือ skill ของ Claude
 
@@ -51,7 +51,7 @@
 2. เลือกไฟล์ STATUS (.xls / .xlsx / .csv)
 3. พิมพ์ **เริ่มต้นเก็บ B/L** และ **ถึง B/L** (เว้นว่างทั้งสองช่อง = ไม่ตัด ทำ Change status อย่างเดียว)
 4. เลือก **POD** (THLCH / THBKK ทำแบบเดิม · THUCT สำหรับงานเข้า UCT) แล้วใส่ SHED NO. (ค่าเริ่มต้น 2813) ใช้กับ THLCH ที่ไม่ใช่ DG ท่าอื่นใส่ตามตารางข้อ 4 อัตโนมัติ
-5. กด **ตัด + Change status** ตรวจผลในตาราง แล้วกด **ดาวน์โหลด MMAN_LCH.txt**
+5. กด **ตัด + Change status** ตรวจผลในตาราง แล้วกด **ดาวน์โหลด** (ชื่อไฟล์ตาม POD เช่น `MMAN_UCT.txt`)
 
 ประมวลผลในเบราว์เซอร์ทั้งหมด ไม่มีการอัปโหลดไฟล์ไปที่ใด
 
@@ -72,7 +72,7 @@ pip install pandas xlrd openpyxl
 ├─ input/
 │  ├─ MMAN__00PSKV....txt
 │  └─ SUR.xls
-└─ output/          ← ได้ MMAN_LCH.txt ที่นี่
+└─ output/          ← ได้ MMAN_<POD>.txt ที่นี่ (เช่น MMAN_LCH.txt)
 ```
 
 รันในโฟลเดอร์ `5-mman-vnsgn` โดยเปลี่ยนเลข B/L เป็นตัวที่ต้องการ
@@ -94,7 +94,7 @@ python mman_vn.py HASLS21260801066 --to HASLS21260801762
 | ตัวเลือก | ความหมาย |
 |---|---|
 | `python mman_vn.py <B/L> <โฟลเดอร์>` | ระบุโฟลเดอร์งานอื่นที่มี `input/` |
-| `-o ชื่อไฟล์.txt` | เปลี่ยนชื่อไฟล์ผลลัพธ์ (ค่าเริ่มต้น `MMAN_LCH.txt`) |
+| `-o ชื่อไฟล์.txt` | เปลี่ยนชื่อไฟล์ผลลัพธ์ (ค่าเริ่มต้นตาม POD: `MMAN_LCH.txt`, `MMAN_BKK.txt`, `MMAN_UCT.txt`; ไม่ใส่ `--pod` = `MMAN_LCH.txt`) |
 | `--pod THUCT` | งานเข้า THUCT: ทุก B/L เป็น `THUCTTHUCT` และ SHED `0113` (ไม่ใส่ = THLCH/THBKK แบบเดิม) |
 | `--shed 2813` | Shed ของ THLCH ที่ไม่ใช่ DG (ค่าเริ่มต้น 2813) |
 

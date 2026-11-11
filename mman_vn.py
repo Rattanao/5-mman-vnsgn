@@ -6,7 +6,7 @@ Keeps the PSKV header line plus the lines from the first B/L through the last B/
 (with its sub-B/Ls and container lines; no --to = through the last line), drops
 everything else, then applies Change status (change_status.py, next to
 this file) with the list file in <folder>/input.
-Result: <folder>/output/MMAN_LCH.txt. The source files are never modified.
+Result: <folder>/output/MMAN_<POD>.txt (MMAN_LCH / MMAN_BKK / MMAN_UCT; no --pod = MMAN_LCH). The source files are never modified.
 """
 import argparse
 import os
@@ -61,11 +61,11 @@ def cut(raw: bytes, first_bl: str, last_bl: str = ""):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Cut + Change status -> output/MMAN_LCH.txt")
+    ap = argparse.ArgumentParser(description="Cut + Change status -> output/MMAN_<POD>.txt")
     ap.add_argument("bl", help="first B/L to keep, e.g. HASLS21260801066")
     ap.add_argument("--to", default="", help="last B/L to keep (with its sub-B/Ls); default: to the last line")
     ap.add_argument("folder", nargs="?", default=".", help="folder holding input/ (default: current folder)")
-    ap.add_argument("-o", default="MMAN_LCH.txt")
+    ap.add_argument("-o", default="", help="output name (default MMAN_<POD>.txt, e.g. MMAN_UCT.txt; no --pod = MMAN_LCH.txt)")
     ap.add_argument("--pod", default="", choices=["", "THLCH", "THBKK", "THUCT"],
                     help="POD of the job: THLCH / THBKK automatic (default); THUCT = every B/L THUCTTHUCT, shed 0113")
     ap.add_argument("--shed", default="2813", help="shed for THLCH non-DG and other ports (default 2813); "
@@ -76,7 +76,7 @@ def main():
     inp = next((d for d in (folder / "input", folder / "Input") if d.is_dir()), folder)
     mman = find_one(inp, ["MMAN_*.txt"], "MMAN_*.txt")
     lst = find_one(inp, ["*.xls", "*.xlsx", "*.csv"], "list file (.xls/.xlsx/.csv)")
-    out = folder / "output" / a.o
+    out = folder / "output" / (a.o or f"MMAN_{(a.pod or 'THLCH')[2:]}.txt")
     out.parent.mkdir(exist_ok=True)
 
     data, removed, total = cut(mman.read_bytes(), a.bl, a.to)

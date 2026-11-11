@@ -1,9 +1,9 @@
 ---
 name: mman-vn
-description: "MMAN VN" for a Thailand import MMAN EDI manifest (fixed-width MMAN_*.txt). In one step it (1) keeps the PSKV header line, keeps only the B/L range the user names, "เริ่มต้นเก็บ B/L … ถึง B/L …" (e.g. HASLS21260801066 to HASLS21260801762, with the last B/L's sub-B/Ls; no end B/L = to the last line), cutting everything before and after, then (2) applies Change status from a B/L list (.xls/.xlsx/.csv with B/L No., Status, POL): POL + port of discharge (the port most B/Ls have; THLKR and other original ports stay), consignee/notify names taken from the notify name+address field (col 1764) except TRANSIT/TRANSHIPMENT B/Ls, shed by original port (BMT 0110, SCT 0302, LKR 0332, UCT 0113, THLCH DG 2826, the rest the given shed, default 2813), consignee names with single spaces only, POL country code in place of TH, new container status (e.g. 8  N -> 9  N), PG -> PX. Writes output/MMAN_LCH.txt. Use whenever the user says "mman vn", "ตัดและ change status", "ตัด MMAN ตั้งแต่ BL ...", "ทำ mman_vn", or points to a folder with input/ holding an MMAN_*.txt plus a status list and names a starting B/L.
+description: "MMAN VN" for a Thailand import MMAN EDI manifest (fixed-width MMAN_*.txt). In one step it (1) keeps the PSKV header line, keeps only the B/L range the user names, "เริ่มต้นเก็บ B/L … ถึง B/L …" (e.g. HASLS21260801066 to HASLS21260801762, with the last B/L's sub-B/Ls; no end B/L = to the last line), cutting everything before and after, then (2) applies Change status from a B/L list (.xls/.xlsx/.csv with B/L No., Status, POL): POL + port of discharge (the port most B/Ls have; THLKR and other original ports stay), consignee/notify names taken from the notify name+address field (col 1764) except TRANSIT/TRANSHIPMENT B/Ls, shed by original port (BMT 0110, SCT 0302, LKR 0332, UCT 0113, THLCH DG 2826, the rest the given shed, default 2813), consignee names with single spaces only, POL country code in place of TH, new container status (e.g. 8  N -> 9  N), PG -> PX. Writes output/MMAN_<POD>.txt (MMAN_LCH / MMAN_BKK / MMAN_UCT). Use whenever the user says "mman vn", "ตัดและ change status", "ตัด MMAN ตั้งแต่ BL ...", "ทำ mman_vn", or points to a folder with input/ holding an MMAN_*.txt plus a status list and names a starting B/L.
 ---
 
-# MMAN LCH (ตัด + Change status → output/MMAN_LCH.txt)
+# MMAN (ตัด + Change status → output/MMAN_<POD>.txt)
 
 Rattana's confirmed format. Run the bundled script; don't edit the file by hand. The file is
 fixed-width, latin-1 and CRLF. Never change line lengths or line endings (sed in Git Bash once
@@ -51,7 +51,7 @@ broke CRLF).
    PYTHONIOENCODING=utf-8 python "<skill dir>/scripts/mman_vn.py" <first B/L> "<folder containing input>" [--to <last B/L>] [--pod THUCT]
    ```
    (If `python` is only the Microsoft Store alias, use `py` instead.)
-   The result is always `output/MMAN_LCH.txt` in that folder (`-o name` to rename). The input
+   The result is `output/MMAN_<POD>.txt` in that folder: MMAN_LCH.txt (no --pod or THLCH), MMAN_BKK.txt, MMAN_UCT.txt (`-o name` to rename). The input
    files are never modified. Requires `pandas`, `xlrd` (.xls) and `openpyxl` (.xlsx).
 2. Report to the user in Thai: lines removed and the B/L range kept, how many B/Ls remain,
    the shed codes used (and DG B/Ls), how many status lines changed and to what, which B/Ls went PG→PX, file size.

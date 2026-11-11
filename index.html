@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MMAN LCH — ตัด + Change Status</title>
+<title>MMAN — ตัด + Change Status</title>
 <link rel="icon" href="assets/hal-logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600&family=Sarabun:wght@400;600&family=IBM+Plex+Mono&display=swap" rel="stylesheet">
@@ -92,8 +92,8 @@ details summary { cursor: pointer; color: var(--muted); }
 </style>
 </head>
 <body>
-<header class="bar"><div class="brand"><span class="logo-badge"><img src="assets/hal-logo.png" alt="Heung A Line"></span><h1>MMAN LCH — ตัด B/L + Change Status → MMAN_LCH.txt</h1></div>
-  <div class="by">Project by Ms. Rattana Mudlae<br>Position Import DOC.<br><span style="opacity:.75;font-size:12px">เวอร์ชัน 09/11/2026 · POD THUCT</span></div>
+<header class="bar"><div class="brand"><span class="logo-badge"><img src="assets/hal-logo.png" alt="Heung A Line"></span><h1>MMAN — ตัด B/L + Change Status → <span id="outName">MMAN_LCH.txt</span></h1></div>
+  <div class="by">Project by Ms. Rattana Mudlae<br>Position Import DOC.<br><span style="opacity:.75;font-size:12px">เวอร์ชัน 11/11/2026 · ชื่อไฟล์ตาม POD</span></div>
 </header>
 <main>
   <div class="card">
@@ -141,7 +141,7 @@ details summary { cursor: pointer; color: var(--muted); }
   <div class="card hidden" id="result">
     <div class="res-head">
       <h2>ผลการตัดและเปลี่ยน Status</h2>
-      <button id="dl" class="sec hidden">ดาวน์โหลด MMAN_LCH.txt</button>
+      <button id="dl" class="sec hidden">ดาวน์โหลด <span id="dlName">MMAN_LCH.txt</span></button>
     </div>
     <div id="msgs"></div>
     <div class="stats" id="stats"></div>
@@ -436,6 +436,11 @@ function render(rep, changed, previews, shed) {
 }
 
 $("run").addEventListener("click", run);
+// download name follows the POD: THLCH -> MMAN_LCH.txt, THBKK -> MMAN_BKK.txt, THUCT -> MMAN_UCT.txt
+const outName = () => "MMAN_" + $("pod").value.slice(2) + ".txt";
+const showName = () => { $("outName").textContent = $("dlName").textContent = outName(); };
+$("pod").addEventListener("change", () => { showName(); $("dl").classList.add("hidden"); });
+showName();
 // clear the chosen files, the B/L and the result so the next job starts fresh
 $("clear").addEventListener("click", () => {
   txtBuf = listRows = outBytes = cutBuf = null;
@@ -451,7 +456,7 @@ $("clear").addEventListener("click", () => {
 $("dl").addEventListener("click", () => {
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([outBytes], { type: "text/plain" }));
-  a.download = "MMAN_LCH.txt"; a.click();
+  a.download = outName(); a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 });
 </script>
