@@ -93,7 +93,7 @@ details summary { cursor: pointer; color: var(--muted); }
 </head>
 <body>
 <header class="bar"><div class="brand"><span class="logo-badge"><img src="assets/hal-logo.png" alt="Heung A Line"></span><h1>MMAN — ตัด B/L + Change Status → <span id="outName">MMAN_LCH.txt</span></h1></div>
-  <div class="by">Project by Ms. Rattana Mudlae<br>Position Import DOC.<br><span style="opacity:.75;font-size:12px">เวอร์ชัน 11/11/2026 · ชื่อไฟล์ตาม POD</span></div>
+  <div class="by">Project by Ms. Rattana Mudlae<br>Position Import DOC.<br><span style="opacity:.75;font-size:12px">เวอร์ชัน 11/11/2026 · SHED 2 ช่อง + คู่มือ</span></div>
 </header>
 <main>
   <div class="card">
@@ -125,9 +125,10 @@ details summary { cursor: pointer; color: var(--muted); }
         </select>
       </div>
       <div class="fld">
-        <label class="lb" for="shed">SHED NO.</label>
+        <label class="lb" for="shedYes">SHED NO. (B/L ที่มี Status · B/L อื่น)</label>
         <div class="shed">
-          <input id="shed" value="2813" maxlength="4" placeholder="2813">
+          <input id="shedYes" value="2813" maxlength="4" placeholder="2813" aria-label="Shed B/L ที่มี Status">
+          <input id="shedNo" value="" maxlength="4" placeholder="ว่าง = ใช้ช่องซ้าย" aria-label="Shed B/L อื่น (ว่าง = ใช้ช่องซ้ายทุก B/L)">
         </div>
       </div>
       <div class="btns">
@@ -135,7 +136,7 @@ details summary { cursor: pointer; color: var(--muted); }
         <button id="clear" class="ghost" type="button">ลบไฟล์</button>
       </div>
     </div>
-    <p class="note">เริ่มต้นเก็บ B/L … ถึง B/L: เก็บบรรทัด PSKV ไว้ แล้วเก็บเฉพาะตั้งแต่ B/L เริ่มต้นจนถึง B/L สุดท้ายที่กำหนด (รวม sub-B/L …A, …B และบรรทัดตู้ของ B/L นั้น) ที่เหลือตัดออก · เว้นว่างช่องเริ่มต้น = ตั้งแต่ B/L แรก · เว้นว่างช่องถึง = ถึงบรรทัดสุดท้าย · เว้นว่างทั้งสองช่อง = ไม่ตัด · SHED NO.: ใช้กับ THLCH ที่ไม่ใช่ DG (THLCH DG = 2826 · BMT 0110 · SCT 0302 · LKR 0332 · UCT 0113) · POD: THLCH / THBKK ทำงานแบบเดิม (ล็อคไว้) · THUCT = ทุก B/L เปลี่ยน col 41-50 เป็น THUCTTHUCT และ SHED 0113 (ไฟล์มาเป็น THBKK) · ประมวลผลในเบราว์เซอร์ ไม่มีการอัปโหลดไฟล์</p>
+    <p class="note">เริ่มต้นเก็บ B/L … ถึง B/L: เก็บบรรทัด PSKV ไว้ แล้วเก็บเฉพาะตั้งแต่ B/L เริ่มต้นจนถึง B/L สุดท้ายที่กำหนด (รวม sub-B/L …A, …B และบรรทัดตู้ของ B/L นั้น) ที่เหลือตัดออก · เว้นว่างช่องเริ่มต้น = ตั้งแต่ B/L แรก · เว้นว่างช่องถึง = ถึงบรรทัดสุดท้าย · เว้นว่างทั้งสองช่อง = ไม่ตัด · SHED NO.: ช่องซ้าย = B/L ที่มี Status · ช่องขวา = B/L อื่น (ว่าง = ใช้ช่องซ้ายทุก B/L) · เลือก POD แล้วใส่ค่าให้อัตโนมัติ: THLCH 2813 · THBKK 0145 / 0122 (แก้เองได้) · ท่าที่ล็อคไว้ไม่ใช้ช่องนี้: THLCH DG 2826 · BMT 0110 · SCT 0302 · LKR 0332 · UCT 0113 · THBKK ไป LAOS 0124 · POD: THLCH / THBKK ทำงานแบบเดิม (ล็อคไว้) · THUCT = ทุก B/L เปลี่ยน col 41-50 เป็น THUCTTHUCT และ SHED 0113 (ไฟล์มาเป็น THBKK) · ประมวลผลในเบราว์เซอร์ ไม่มีการอัปโหลดไฟล์ · <a href="guide.html" style="color:inherit;font-weight:600">คู่มือการใช้งาน</a></p>
   </div>
 
   <div class="card hidden" id="result">
@@ -157,7 +158,7 @@ details summary { cursor: pointer; color: var(--muted); }
         <li>col 36-40 = POL (คอลัมน์ C)</li>
         <li>col 41-45 = ท่าเรือของ B/L ส่วนใหญ่ในไฟล์ (เช่น THBKK, THLCH)</li>
         <li>col 46-50 = ท่าเรือตามต้นฉบับ (THLCH, THLKR, …) คงเดิม ห้ามแก้</li>
-        <li>col 51-54 = Shed ตามท่าต้นฉบับ: BMT 0110 · SCT 0302 · LKR 0332 · UCT 0113 · THLCH ที่เป็น DG (มี UN/CLASS) 2826 · THBKK ที่ไป LAOS 0124 · ที่เหลือตามช่อง SHED NO.</li>
+        <li>col 51-54 = Shed ตามท่าต้นฉบับ: BMT 0110 · SCT 0302 · LKR 0332 · UCT 0113 · THLCH ที่เป็น DG (มี UN/CLASS) 2826 · THBKK ที่ไป LAOS 0124 · ที่เหลือตามช่อง SHED NO. (B/L ที่มี Status = ช่องซ้าย · B/L อื่น = ช่องขวา)</li>
         <li>col 844-845 = อักษร 2 ตัวแรกของ POL (แทน TH)</li>
         <li>บรรทัดตู้ = Status จากคอลัมน์ B (เช่น 8&nbsp;&nbsp;N → 9&nbsp;&nbsp;N) ว่าง = คงเดิม</li>
         <li>หน่วยหีบห่อ PG → PX ทุก B/L · ตัวอักษร O หน้า description (col 3804) → 5 เฉพาะ B/L ที่ Status 9 N · B/L อื่น O คงเดิม (TRANSIT/TRANSHIPMENT ใช้ 7/3/L ตามข้อด้านล่าง)</li>
@@ -342,7 +343,8 @@ function run() {
     return;
   }
   const src = cutBuf, out = new Uint8Array(src);
-  const shed = $("shed").value.trim().padEnd(4).slice(0, 4);
+  const shedYes = $("shedYes").value.trim() || "2813", shedNo = $("shedNo").value.trim() || shedYes;
+  const shed = shedYes.padEnd(4).slice(0, 4), shed2 = shedNo.padEnd(4).slice(0, 4);  // B/L with Status / other B/Ls
   const rep = { bl: [], statusCount: {}, pg: [], notInList: [], noPol: [], layout: [], cut: cutInfo, sheds: {}, dg: [], transitCtry: [], transitNoCtry: [], cleared: [], o5: [],
                 names: { changed: [], same: [], transit: [], differ: [] } };
   const lines = [];
@@ -373,7 +375,7 @@ function run() {
       else put(out, s + COL.COPY, port || str(src, s + COL.PORT, s + COL.PORT + 5));
       const dg = !!c.dg || DG_RE.test(str(src, s + 3302, e)), orig = str(out, s + COL.PORT, s + COL.PORT + 5);
       const sh = orig === "THBKK" && destCountry(str(src, s, e)) === "LA" ? SHED_BKK_LAOS
-        : PORT_SHED[orig] || (orig === "THLCH" && dg ? SHED_LCH_DG : shed);
+        : PORT_SHED[orig] || (orig === "THLCH" && dg ? SHED_LCH_DG : (c.status ? shed : shed2));
       put(out, s + COL.SHED, sh);
       rep.sheds[sh] = (rep.sheds[sh] || 0) + 1;
       if (dg) rep.dg.push(bl);
@@ -398,6 +400,12 @@ function run() {
       rep.statusCount[cur] = (rep.statusCount[cur] || 0) + 1;
       if (previews.length < 6) previews.push([s, e]);
     }
+  }
+  if (!rep.bl.length) {  // the list belongs to another vessel
+    $("msgs").innerHTML = `<div class="warn">ไม่พบ B/L ในไฟล์ MMAN ที่ตรงกับรายการ STATUS — ตรวจว่ารายการเป็นของเรือลำเดียวกัน</div>`;
+    $("stats").innerHTML = $("tbl").innerHTML = $("preview").innerHTML = "";
+    $("result").classList.remove("hidden"); $("dl").classList.add("hidden");
+    return;
   }
   let changed = 0; for (let i = 0; i < src.length; i++) if (src[i] !== out[i]) changed++;
   outBytes = out;
@@ -439,7 +447,13 @@ $("run").addEventListener("click", run);
 // download name follows the POD: THLCH -> MMAN_LCH.txt, THBKK -> MMAN_BKK.txt, THUCT -> MMAN_UCT.txt
 const outName = () => "MMAN_" + $("pod").value.slice(2) + ".txt";
 const showName = () => { $("outName").textContent = $("dlName").textContent = outName(); };
-$("pod").addEventListener("change", () => { showName(); $("dl").classList.add("hidden"); });
+// SHED NO. defaults follow the POD (can be edited): THBKK 0145 (with Status) / 0122 (others), the rest 2813
+const POD_SHEDS = { THBKK: ["0145", "0122"] };
+$("pod").addEventListener("change", () => {
+  const [y, n] = POD_SHEDS[$("pod").value] || ["2813", ""];
+  $("shedYes").value = y; $("shedNo").value = n;
+  showName(); $("dl").classList.add("hidden");
+});
 showName();
 // clear the chosen files, the B/L and the result so the next job starts fresh
 $("clear").addEventListener("click", () => {

@@ -4,11 +4,14 @@ Usage:
     python change_status.py <folder>                      # folder holding Input/ (MMAN_*.txt + .xls/.xlsx/.csv)
     python change_status.py <mman.txt> <list.xls|xlsx|csv> [-o OUTPUT]
 Options:
-    --shed-yes 0145   shed code for B/Ls that have a Status in column B
-    --shed-no  0122   shed code for all other B/Ls
+    --pod THLCH|THBKK|THUCT   THUCT = every B/L THUCTTHUCT, shed 0113
+    --shed-yes X      SHED NO. for B/Ls that have a Status in column B
+    --shed-no  Y      SHED NO. for the other B/Ls ("" = same as --shed-yes)
+    --shed X          one SHED NO. for every B/L
+    default: POD THBKK 0145 / 0122, otherwise 2813 for every B/L (port-locked sheds always win)
 
 The list file: only columns A-C are read -> A=B/L No., B=Status ("9  N", "7  N", blank), C=POL (KRPUS...).
-Output is always MMAN_EDI.txt (next to Input/ in folder mode). Input files are never modified.
+Output is always MMAN_EDI.txt (in output/ next to input/ in folder mode). Input files are never modified.
 """
 import argparse
 import re
@@ -180,6 +183,14 @@ def set_at(s: str, pos: int, txt: str) -> str:
     return s[:pos] + txt + s[pos + len(txt):]
 
 
+# SHED NO. used when no port-locked shed applies: (B/L with Status, other B/Ls)
+DEFAULT_SHEDS = {"THBKK": ("0145", "0122")}   # every other POD: 2813 for every B/L
+
+
+def default_sheds(pod: str = ""):
+    return DEFAULT_SHEDS.get((pod or "").upper(), ("2813", "2813"))
+
+
 def shed_for(line: str, dg: bool, shed: str) -> str:
     port = line[COL_PORT:COL_PORT + 5]
     if port == "THBKK" and dest_country(line) == "LA":
@@ -196,7 +207,9 @@ def shed_for(line: str, dg: bool, shed: str) -> str:
 POD_FORCE = {"THUCT"}
 
 
-def change_status(mman: Path, lst: Path, out: Path, shed: str, pod: str = "") -> dict:
+def change_status(mman: Path, lst: Path, out: Path, shed: str, pod: str = "", shed_no: str = "") -> dict:
+    """shed = SHED NO. for B/Ls with a Status, shed_no = for the other B/Ls (blank = shed)."""
+    shed_no = (shed_no or "").strip() or shed
     cfg = read_list(lst)
     raw = mman.read_bytes()
     parts = [p.decode(ENC) for p in re.split(rb"(\r\n|\n)", raw)]  # keep original line endings
@@ -233,7 +246,7 @@ def change_status(mman: Path, lst: Path, out: Path, shed: str, pod: str = "") ->
                 line = set_at(line, COL_COPY, force)
             else:
                 line = set_at(line, COL_COPY, port or line[COL_PORT:COL_PORT + 5])
-            sh = shed_for(line, dg, shed)
+            sh = shed_for(line, dg, shed if st else shed_no)
             line = set_at(line, COL_SHED, sh)
             rep["sheds"][sh] += 1
             if dg:
@@ -278,23 +291,46 @@ def change_status(mman: Path, lst: Path, out: Path, shed: str, pod: str = "") ->
 
 
 def find_inputs(folder: Path):
-    inp = folder / "Input" if (folder / "Input").is_dir() else folder
+    inp = next((d for d in (folder / "input", folder / "Input") if d.is_dir()), folder)
     txts = [t for t in sorted(inp.glob("*.txt")) if not t.name.upper().startswith("MMAN_EDI")]
     txts = [t for t in txts if t.name.upper().startswith("MMAN")] or txts
     lists = sorted([*inp.glob("*.xls"), *inp.glob("*.xlsx"), *inp.glob("*.csv")])
     if len(txts) != 1 or len(lists) != 1:
         raise SystemExit(f"ERROR: need exactly 1 MMAN .txt and 1 list file in {inp}; "
                          f"found txt={[t.name for t in txts]} list={[l.name for l in lists]}")
-    return txts[0], lists[0], inp / "MMAN_EDI.txt"
+    out_dir = folder / "output"   # result goes to output/, next to input/
+    out_dir.mkdir(exist_ok=True)
+    return txts[0], lists[0], out_dir / "MMAN_EDI.txt"
+
+
+def add_shed_args(ap):
+    ap.add_argument("--pod", default="", choices=["", "THLCH", "THBKK", "THUCT"],
+                    help="POD of the job: THLCH / THBKK automatic (default); THUCT = every B/L THUCTTHUCT, shed 0113")
+    ap.add_argument("--shed", help="one SHED NO. for every B/L (same as --shed-yes X --shed-no X)")
+    ap.add_argument("--shed-yes", help="SHED NO. for B/Ls with a Status (default: POD THBKK 0145, others 2813)")
+    ap.add_argument("--shed-no", help="SHED NO. for the other B/Ls (default: POD THBKK 0122, others 2813; '' or '=' = same as --shed-yes)")
+
+
+def resolve_sheds(a):
+    """(SHED for B/Ls with a Status, SHED for the others) from --shed / --shed-yes / --shed-no / the POD default.
+    BMT 0110, SCT 0302, LKR 0332, UCT 0113, THLCH DG 2826 and THBKK->LAOS 0124 always win."""
+    yes, no = default_sheds(a.pod)
+    if a.shed:
+        yes = no = a.shed
+    if a.shed_yes:
+        yes = a.shed_yes
+    if a.shed_no is not None:
+        no = a.shed_no.strip().strip("=") or yes   # '' or '=' = same as --shed-yes
+    return yes.strip().ljust(4)[:4], no.strip().ljust(4)[:4]
 
 
 def main():
     ap = argparse.ArgumentParser(description="Change status -> MMAN_EDI.txt")
     ap.add_argument("paths", nargs="+")
     ap.add_argument("-o", "--output")
-    ap.add_argument("--shed", default="2813", help="shed for THLCH (non-DG) and ports not in PORT_SHED")
-    ap.add_argument("--pod", default="", choices=["", "THLCH", "THBKK", "THUCT"], help="THUCT = every B/L THUCTTHUCT")
+    add_shed_args(ap)
     a = ap.parse_args()
+    shed_yes, shed_no = resolve_sheds(a)
     if len(a.paths) == 1:
         mman, lst, out = find_inputs(Path(a.paths[0]))
     else:
@@ -302,7 +338,10 @@ def main():
         out = mman.parent / "MMAN_EDI.txt"
     if a.output:
         out = Path(a.output)
-    rep = change_status(mman, lst, out, a.shed, a.pod)
+    rep = change_status(mman, lst, out, shed_yes, a.pod, shed_no)
+    if rep["bl_lines"] == 0:
+        print("ERROR: no B/L in the MMAN file matches the list - check that the list belongs to this vessel")
+        return 1
 
     print(f"MMAN : {mman}\nLIST : {lst}\nOUT  : {out}")
     print(f"B/L lines edited : {rep['bl_lines']}  (shed " + ", ".join(f"{k} x{v}" for k, v in rep["sheds"].items()) + ")")

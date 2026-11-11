@@ -1,6 +1,6 @@
 """MMAN VN: cut + Change status in one step.
 
-    python mman_vn.py <first B/L to keep> [folder] [--to <last B/L to keep>] [-o name] [--shed 2813]
+    python mman_vn.py <first B/L to keep> [folder] [--to <last B/L to keep>] [-o name] [--pod THLCH|THBKK|THUCT] [--shed-yes X] [--shed-no Y] [--shed X]
 
 Keeps the PSKV header line plus the lines from the first B/L through the last B/L
 (with its sub-B/Ls and container lines; no --to = through the last line), drops
@@ -15,7 +15,7 @@ import tempfile
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from change_status import change_status  # noqa: E402
+from change_status import add_shed_args, change_status, default_sheds, resolve_sheds  # noqa: E402
 
 RESULTS = {"mman_lch.txt", "mman_vn.txt", "mman_edi.txt"}
 
@@ -60,17 +60,41 @@ def cut(raw: bytes, first_bl: str, last_bl: str = ""):
     return b"".join(kept), len(lines) - len(kept), len(lines)
 
 
+def ask(a):
+    """Questions for run-mman.bat; Enter keeps the default."""
+    def q(prompt, default=""):
+        try:
+            v = input(prompt).strip()
+        except EOFError:
+            v = ""
+        return v or default
+    a.bl = q("เริ่มต้นเก็บ B/L [Enter = ตั้งแต่ B/L แรก]: ", a.bl)
+    a.to = q("ถึง B/L [Enter = ถึงบรรทัดสุดท้าย]: ", a.to)
+    while True:
+        pod = q("POD THLCH / THBKK / THUCT [Enter = THLCH]: ", a.pod or "THLCH").upper()
+        if pod in ("THLCH", "THBKK", "THUCT"):
+            a.pod = pod
+            break
+        print("  พิมพ์ THLCH, THBKK หรือ THUCT")
+    if a.pod != "THUCT":
+        dy, dn = default_sheds(a.pod)
+        a.shed_yes = q(f"SHED NO. B/L ที่มี Status [Enter = {dy}]: ", a.shed_yes or dy)
+        a.shed_no = q(f"SHED NO. B/L อื่น [Enter = {dn} / พิมพ์ = ใช้ค่าเดียวกับข้างบน]: ", a.shed_no or dn)
+    print()
+
+
 def main():
     ap = argparse.ArgumentParser(description="Cut + Change status -> output/MMAN_<POD>.txt")
-    ap.add_argument("bl", help="first B/L to keep, e.g. HASLS21260801066")
+    ap.add_argument("bl", nargs="?", default="", help="first B/L to keep, e.g. HASLS21260801066 ('' = from the first B/L)")
     ap.add_argument("--to", default="", help="last B/L to keep (with its sub-B/Ls); default: to the last line")
     ap.add_argument("folder", nargs="?", default=".", help="folder holding input/ (default: current folder)")
     ap.add_argument("-o", default="", help="output name (default MMAN_<POD>.txt, e.g. MMAN_UCT.txt; no --pod = MMAN_LCH.txt)")
-    ap.add_argument("--pod", default="", choices=["", "THLCH", "THBKK", "THUCT"],
-                    help="POD of the job: THLCH / THBKK automatic (default); THUCT = every B/L THUCTTHUCT, shed 0113")
-    ap.add_argument("--shed", default="2813", help="shed for THLCH non-DG and other ports (default 2813); "
-                    "BMT 0110, SCT 0302, LKR 0332, UCT 0113 and THLCH DG 2826 are fixed")
+    ap.add_argument("--ask", action="store_true", help="ask for the B/L range, POD and SHED NO. on screen (run-mman.bat)")
+    add_shed_args(ap)
     a = ap.parse_args()
+    if a.ask:
+        ask(a)
+    shed_yes, shed_no = resolve_sheds(a)
 
     folder = Path(a.folder).resolve()
     inp = next((d for d in (folder / "input", folder / "Input") if d.is_dir()), folder)
@@ -84,13 +108,16 @@ def main():
     try:
         with os.fdopen(fd, "wb") as f:
             f.write(data)
-        rep = change_status(Path(tmp), lst, out, a.shed, a.pod)
+        rep = change_status(Path(tmp), lst, out, shed_yes, a.pod, shed_no)
     finally:
         os.remove(tmp)
 
+    if rep["bl_lines"] == 0:
+        sys.exit("ERROR: no B/L in the MMAN file matches the list - check that the list belongs to this vessel")
     print(f"MMAN : {mman}\nLIST : {lst}\nOUT  : {out}")
     print(f"Cut              : removed {removed} lines ({total} -> {total - removed}), kept B/L {a.bl.upper() or 'first B/L'} to {a.to.upper() or 'last line'}")
     print(f"B/L lines edited : {rep['bl_lines']}  (with Status: {len(rep['with_status'])})")
+    print(f"SHED NO. given   : B/L with Status {shed_yes}, other B/L {shed_no}")
     print("Shed             : " + ", ".join(f"{k} x{v}" for k, v in rep["sheds"].items()))
     print(f"DG B/L           : {rep['dg'] or 'none'}")
     print("Status set       : " + (", ".join(f"{k!r} x{v}" for k, v in rep["status_lines"].items()) or "none"))

@@ -1,6 +1,6 @@
 ---
 name: mman-vn
-description: "MMAN VN" for a Thailand import MMAN EDI manifest (fixed-width MMAN_*.txt). In one step it (1) keeps the PSKV header line, keeps only the B/L range the user names, "เริ่มต้นเก็บ B/L … ถึง B/L …" (e.g. HASLS21260801066 to HASLS21260801762, with the last B/L's sub-B/Ls; no end B/L = to the last line), cutting everything before and after, then (2) applies Change status from a B/L list (.xls/.xlsx/.csv with B/L No., Status, POL): POL + port of discharge (the port most B/Ls have; THLKR and other original ports stay), consignee/notify names taken from the notify name+address field (col 1764) except TRANSIT/TRANSHIPMENT B/Ls, shed by original port (BMT 0110, SCT 0302, LKR 0332, UCT 0113, THLCH DG 2826, the rest the given shed, default 2813), consignee names with single spaces only, POL country code in place of TH, new container status (e.g. 8  N -> 9  N), PG -> PX. Writes output/MMAN_<POD>.txt (MMAN_LCH / MMAN_BKK / MMAN_UCT). Use whenever the user says "mman vn", "ตัดและ change status", "ตัด MMAN ตั้งแต่ BL ...", "ทำ mman_vn", or points to a folder with input/ holding an MMAN_*.txt plus a status list and names a starting B/L.
+description: "MMAN VN" for a Thailand import MMAN EDI manifest (fixed-width MMAN_*.txt). In one step it (1) keeps the PSKV header line, keeps only the B/L range the user names, "เริ่มต้นเก็บ B/L … ถึง B/L …" (e.g. HASLS21260801066 to HASLS21260801762, with the last B/L's sub-B/Ls; no end B/L = to the last line), cutting everything before and after, then (2) applies Change status from a B/L list (.xls/.xlsx/.csv with B/L No., Status, POL): POL + port of discharge (the port most B/Ls have; THLKR and other original ports stay), consignee/notify names taken from the notify name+address field (col 1764) except TRANSIT/TRANSHIPMENT B/Ls, shed by original port (BMT 0110, SCT 0302, LKR 0332, UCT 0113, THLCH DG 2826, THBKK to LAOS 0124; the rest the given SHED NO. for B/Ls with / without a Status: THLCH 2813, THBKK 0145 / 0122), consignee names with single spaces only, POL country code in place of TH, new container status (e.g. 8  N -> 9  N), PG -> PX. Writes output/MMAN_<POD>.txt (MMAN_LCH / MMAN_BKK / MMAN_UCT). Without a B/L range it does Change status only (replaces the old change-status skill / Change-status-mman site). Use whenever the user says "mman vn", "ตัดและ change status", "ตัด MMAN ตั้งแต่ BL ...", "ทำ mman_vn", "Change status", "เปลี่ยน status mman", "แก้ MMAN", or points to a folder with input/ holding an MMAN_*.txt plus a status list.
 ---
 
 # MMAN (ตัด + Change status → output/MMAN_<POD>.txt)
@@ -13,8 +13,9 @@ broke CRLF).
 
 - A folder with `input/` (or `Input/`) containing **1** `MMAN_*.txt` + **1** list file (`.xls`, `.xlsx`, `.csv`)
 - The **first B/L to keep** ("เริ่มต้นเก็บ B/L", e.g. `HASLS21260801066`) and optionally the
-  **last B/L to keep** ("ถึง B/L", e.g. `HASLS21260801762`). If the user gave no B/L, ask. Don't
-  guess. No end B/L = keep through the last line.
+  **last B/L to keep** ("ถึง B/L", e.g. `HASLS21260801762`). No end B/L = keep through the last line.
+  If the user asks for "Change status" only (no cut), pass `""` as the first B/L. Otherwise, if no
+  B/L was given, ask. Don't guess.
 - List file: only columns A-C are used, found **by header name** (B/L No., Status, POL in any
   order, e.g. `SUR.xls` = POL, Status, B/L No.). Status blank = keep the original status.
 - If the list is a **PDF**, extract columns A-C into a CSV with the header `B/L No.,Status,POL`
@@ -33,7 +34,7 @@ broke CRLF).
 | 2 | col 40-44 | port of discharge = the port most B/Ls have in col 45-49 (e.g. THBKK, THLCH) |
 | 3 | col 45-49 | port from the original (THLCH, THLKR, …), never changed |
 | POD | col 40-49 | `--pod THUCT` (job going to THUCT; the file arrives as THBKK): every B/L becomes `THUCTTHUCT`, shed `0113`. THLCH / THBKK = rows 2-3 unchanged (locked). Ask the user which POD when the list file name or the user mentions UCT |
-| 4 | col 50-53 | shed by the original port in col 45-49: THBMT `0110`, THSCT `0302`, THLKR `0332`, THUCT `0113`; THLCH DG `2826` (DG = the list's DG column is filled, or the B/L line has UN xxxx / IMO / IMDG / CLASS n); everything else `--shed` (default `2813`) |
+| 4 | col 50-53 | shed by the original port in col 45-49: THBMT `0110`, THSCT `0302`, THLKR `0332`, THUCT `0113`; THLCH DG `2826` (DG = the list's DG column is filled, or the B/L line has UN xxxx / IMO / IMDG / CLASS n); THBKK going to LAOS `0124`; everything else the SHED NO. given: `--shed-yes` for B/Ls with a Status, `--shed-no` for the others (`=` = same), `--shed X` = one code for all. Defaults by POD: THLCH 2813 / 2813, THBKK 0145 / 0122. Ask the user if a job needs other codes |
 | 5 | col 843-844 | first 2 letters of POL (e.g. `VN`), replacing `TH` |
 | 6 | container line col 17 | Status from the list (`8  N` → `9  N`) |
 | – | package unit | `PG` → `PX` on every B/L |
@@ -48,12 +49,12 @@ broke CRLF).
 
 1. Run:
    ```bash
-   PYTHONIOENCODING=utf-8 python "<skill dir>/scripts/mman_vn.py" <first B/L> "<folder containing input>" [--to <last B/L>] [--pod THUCT]
+   PYTHONIOENCODING=utf-8 python "<skill dir>/scripts/mman_vn.py" <first B/L> "<folder containing input>" [--to <last B/L>] [--pod THLCH|THBKK|THUCT] [--shed-yes X --shed-no Y]
    ```
    (If `python` is only the Microsoft Store alias, use `py` instead.)
    The result is `output/MMAN_<POD>.txt` in that folder: MMAN_LCH.txt (no --pod or THLCH), MMAN_BKK.txt, MMAN_UCT.txt (`-o name` to rename). The input
    files are never modified. Requires `pandas`, `xlrd` (.xls) and `openpyxl` (.xlsx).
 2. Report to the user in Thai: lines removed and the B/L range kept, how many B/Ls remain,
    the shed codes used (and DG B/Ls), how many status lines changed and to what, which B/Ls went PG→PX, file size.
-3. If the script prints `ERROR` (B/L not found, more than one MMAN/list file) or `WARNING`
+3. If the script prints `ERROR` (B/L not found, no B/L matches the list = list of another vessel, more than one MMAN/list file) or `WARNING`
    (B/L not in the list, B/L without POL, unexpected layout), tell the user and ask. Don't guess.

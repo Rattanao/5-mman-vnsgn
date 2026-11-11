@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MMAN คู่มือ</title>
+<link rel="icon" href="assets/hal-logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;700&family=IBM+Plex+Mono:wght@400;600&family=Anuphan:wght@600;700&display=swap">
+<style>
+/* Layout: same single reading column as the CMA guide — header block, numbered procedure, list forms, before/after MMAN line, troubleshooting table */
+:root {
+  --bg: #f3f5f8;
+  --paper: #ffffff;
+  --ink: #17212e;
+  --muted: #566577;
+  --line: #d5dce5;
+  --navy: #1f4e78;
+  --navy-ink: #ffffff;
+  --accent: #1f4e78;
+  --red: #fdd7d7;   --red-ink: #8a1414;
+  --org: #fce4d6;   --org-ink: #8a3d0b;
+  --yel: #fff2cc;   --yel-ink: #6b5200;
+  --grn: #c6efce;   --grn-ink: #1d5c2b;
+  --blu: #dbe8f7;   --blu-ink: #173f66;
+  --code: #eef2f7;
+  --display: "Anuphan", "IBM Plex Sans Thai", system-ui, sans-serif;
+  --body: "IBM Plex Sans Thai", system-ui, "Leelawadee UI", "Tahoma", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f151d; --paper: #172130; --ink: #e6ecf3; --muted: #9aa9bb; --line: #2b3a4d;
+    --navy: #2d6aa3; --navy-ink: #ffffff; --accent: #7fb3e6;
+    --red: #4a1f22; --red-ink: #ffb3b3; --org: #4a2d1c; --org-ink: #ffc59e;
+    --yel: #443a17; --yel-ink: #ffe38a; --grn: #1d3b25; --grn-ink: #9be3ad;
+    --blu: #1b3048; --blu-ink: #a9cdf2;
+    --code: #0f1824; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f151d; --paper: #172130; --ink: #e6ecf3; --muted: #9aa9bb; --line: #2b3a4d;
+  --navy: #2d6aa3; --navy-ink: #ffffff; --accent: #7fb3e6;
+  --red: #4a1f22; --red-ink: #ffb3b3; --org: #4a2d1c; --org-ink: #ffc59e;
+  --yel: #443a17; --yel-ink: #ffe38a; --grn: #1d3b25; --grn-ink: #9be3ad;
+  --blu: #1b3048; --blu-ink: #a9cdf2;
+  --code: #0f1824; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.7; }
+.wrap { max-width: 860px; margin: 0 auto; padding-inline: 20px; padding-block: 32px 56px; display: grid; gap: 28px; }
+h1, h2 { font-family: var(--display); text-wrap: balance; line-height: 1.25; margin: 0; }
+h1 { font-size: clamp(2rem, 6vw, 2.9rem); letter-spacing: -0.01em; }
+h2 { font-size: 1.35rem; }
+p { margin: 0; }
+a { color: var(--accent); }
+a:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+code, .mono { font-family: var(--mono); font-size: 0.88em; }
+code { background: var(--code); padding: 1px 6px; border-radius: 4px; }
+
+.head { display: grid; gap: 14px; padding-block: 8px 4px; }
+.logo-badge { justify-self: start; background: #ffffff; border-radius: 8px; padding: 6px 12px; display: inline-flex; line-height: 0; border: 1px solid var(--line); }
+.logo-badge img { height: 40px; width: auto; display: block; }
+@media (max-width: 480px) { .logo-badge img { height: 30px; } }
+.tag { font-family: var(--mono); font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.lede { color: var(--muted); max-width: 62ch; font-size: 1.05rem; }
+.flow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-family: var(--mono); font-size: 0.85rem; }
+.flow span.doc { background: var(--paper); border: 1px solid var(--line); padding: 4px 10px; border-radius: 6px; }
+.flow span.out { background: var(--navy); color: var(--navy-ink); padding: 4px 10px; border-radius: 6px; font-weight: 600; }
+.flow span.op { color: var(--muted); }
+.cta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 8px; font-weight: 500; text-decoration: none; border: 1px solid var(--navy); }
+.btn.primary { background: var(--navy); color: var(--navy-ink); }
+.btn.ghost { color: var(--accent); background: transparent; border-color: var(--line); }
+
+section.panel { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 24px; display: grid; gap: 16px; min-width: 0; }
+.sub { color: var(--muted); font-size: 0.95rem; }
+
+ol.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; counter-reset: s; }
+ol.steps > li { counter-increment: s; display: grid; grid-template-columns: 2.2rem 1fr; gap: 12px; align-items: start; min-width: 0; }
+ol.steps > li::before { content: counter(s); font-family: var(--mono); font-weight: 600; width: 2.2rem; height: 2.2rem; display: grid; place-items: center; border-radius: 50%; background: var(--navy); color: var(--navy-ink); font-size: 0.95rem; }
+ol.steps li > div { min-width: 0; display: grid; gap: 4px; }
+ol.steps b { font-weight: 700; }
+.note { font-size: 0.9rem; color: var(--muted); }
+.warn { background: var(--yel); color: var(--yel-ink); border-radius: 6px; padding: 2px 8px; font-weight: 500; }
+
+.cmd { display: flex; gap: 8px; align-items: stretch; min-width: 0; }
+.cmd pre { flex: 1; min-width: 0; margin: 0; background: var(--code); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow-x: auto; font-family: var(--mono); font-size: 0.85rem; line-height: 1.5; }
+.cmd button { font: inherit; font-size: 0.85rem; padding: 0 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); cursor: pointer; }
+
+.split { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.split > div { min-width: 0; display: grid; gap: 8px; align-content: start; }
+.split h3 { margin: 0; font-size: 1rem; font-family: var(--display); }
+
+.sheet-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; }
+table.sheet { border-collapse: collapse; font-size: 0.82rem; width: 100%; font-variant-numeric: tabular-nums; }
+.sheet th { background: var(--navy); color: var(--navy-ink); font-weight: 600; padding: 7px 10px; text-align: center; white-space: nowrap; }
+.sheet th.col { background: var(--code); color: var(--muted); font-family: var(--mono); font-weight: 400; padding: 3px 10px; }
+.sheet td { padding: 7px 10px; border-top: 1px solid var(--line); white-space: pre; font-family: var(--mono); }
+.r { background: var(--red); color: var(--red-ink); }
+.o { background: var(--org); color: var(--org-ink); }
+.y { background: var(--yel); color: var(--yel-ink); }
+.g { background: var(--grn); color: var(--grn-ink); }
+.b { background: var(--blu); color: var(--blu-ink); }
+.caption { font-size: 0.82rem; color: var(--muted); }
+
+/* before / after MMAN line */
+.line-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--code); }
+.mline { margin: 0; padding: 12px 14px; font-family: var(--mono); font-size: 0.82rem; line-height: 2; white-space: pre; }
+.mline .lab { display: inline-block; width: 4.5em; color: var(--muted); font-family: var(--body); }
+.mline mark { border-radius: 3px; padding: 1px 0; }
+.mline sup { font-size: 0.68rem; font-weight: 600; margin-left: 1px; }
+
+table.rules { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+.rules th { text-align: left; color: var(--muted); font-weight: 500; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.rules td { padding: 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.rules td:first-child { width: 2.6rem; }
+.rules .chip { display: inline-grid; place-items: center; min-width: 1.7rem; height: 1.7rem; border-radius: 6px; font-family: var(--mono); font-weight: 600; font-size: 0.85rem; }
+.rules td.pos { font-family: var(--mono); font-size: 0.82rem; white-space: nowrap; color: var(--muted); }
+
+.legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+.legend div { border-radius: 8px; padding: 10px 12px; display: grid; gap: 2px; }
+.legend b { font-size: 0.95rem; }
+.legend span { font-size: 0.85rem; }
+
+.check-list { margin: 0; padding-left: 1.2rem; display: grid; gap: 4px; }
+
+.trouble-scroll { overflow-x: auto; }
+table.trouble { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+.trouble th { text-align: left; color: var(--muted); font-weight: 500; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.trouble td { padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.trouble td:first-child { font-family: var(--mono); font-size: 0.82rem; width: 40%; }
+
+footer { color: var(--muted); font-size: 0.85rem; display: grid; gap: 4px; }
+footer .credit { color: var(--ink); }
+@media (max-width: 480px) { section.panel { padding: 18px; } .wrap { padding-inline: 16px; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="head">
+    <span class="logo-badge"><img src="assets/hal-logo.png" alt="Heung A Line"></span>
+    <div class="tag">เครื่องมือแก้ไฟล์ MMAN EDI · ใบขนสินค้าขาเข้า</div>
+    <h1>MMAN — ตัด B/L + Change Status</h1>
+    <p class="lede">ตัดไฟล์ MMAN ให้เหลือเฉพาะ B/L ที่ต้องการ (หรือไม่ตัด) แล้วเติม POL, SHED NO., รหัสประเทศ, ชื่อ consignee / notify และเปลี่ยน STATUS ตู้ ตามรายการ B/L ของงาน ได้ไฟล์ชื่อตาม POD (MMAN_LCH.txt / MMAN_BKK.txt / MMAN_UCT.txt) ที่ความยาวทุกบรรทัดตรงเดิม พร้อมส่งต่อ</p>
+    <div class="flow" aria-label="ขั้นตอนการทำงาน">
+      <span class="doc">MMAN_*.txt</span><span class="op">+</span>
+      <span class="doc">SUR.xls</span><span class="op">→</span>
+      <span class="out">MMAN_&lt;POD&gt;.txt</span>
+    </div>
+    <div class="cta">
+      <a class="btn primary" href="./">ทำออนไลน์ (ไม่ต้องติดตั้ง)</a>
+      <a class="btn ghost" href="https://github.com/Rattanao/5-mman-vnsgn/archive/refs/heads/main.zip">ดาวน์โหลดโปรแกรม (ZIP)</a>
+      <a class="btn ghost" href="https://github.com/Rattanao/5-mman-vnsgn">เปิดหน้า GitHub</a>
+    </div>
+  </header>
+
+  <section class="panel" id="online">
+    <h2>ทำออนไลน์</h2>
+    <p class="sub">เร็วที่สุด ไม่ต้องติดตั้งอะไร ไฟล์ประมวลผลในเบราว์เซอร์เท่านั้น ไม่ถูกอัปโหลดขึ้นเซิร์ฟเวอร์</p>
+    <ol class="steps">
+      <li><div><p><b>เปิดหน้า <a href="./">ทำออนไลน์</a></b> แล้วเลือกไฟล์ MMAN (.txt)</p></div></li>
+      <li><div><p><b>เลือกรายการ STATUS</b> (.xls / .xlsx / .csv)</p></div></li>
+      <li><div>
+        <p><b>เริ่มต้นเก็บ B/L … ถึง B/L</b> (ถ้าต้องการตัดไฟล์)</p>
+        <p class="note">เก็บบรรทัด PSKV ไว้ แล้วเก็บเฉพาะ B/L ในช่วงนี้ (รวม sub-B/L …A, …B และบรรทัดตู้) ที่เหลือตัดออก · ว่างช่องเริ่มต้น = ตั้งแต่ B/L แรก · ว่างช่องถึง = ถึงบรรทัดสุดท้าย · ว่างทั้งสองช่อง = ไม่ตัด</p>
+      </div></li>
+      <li><div>
+        <p><b>เลือก POD</b> แล้วตรวจ <b>SHED NO.</b> ช่องซ้าย = B/L ที่มี Status, ช่องขวา = B/L อื่น</p>
+        <p class="note">เลือก POD แล้วโปรแกรมใส่ SHED ให้เอง: <b>THLCH</b> <code>2813</code> ทุก B/L (ช่องขวาว่าง) · <b>THBKK</b> <code>0145</code> / <code>0122</code> · <b>THUCT</b> ทุก B/L เป็น THUCTTHUCT และ SHED <code>0113</code> · แก้ตัวเลขเองได้ · ช่องขวาว่าง = ใช้ค่าช่องซ้ายทุก B/L</p>
+      </div></li>
+      <li><div>
+        <p><b>กด ตัด + Change status</b> ดูสรุปผล แล้วกด <b>ดาวน์โหลด</b> (ชื่อไฟล์ตาม POD เช่น MMAN_BKK.txt)</p>
+        <p class="note">ถ้าหน้าเว็บยังเป็นแบบเก่า กด <code>Ctrl + F5</code></p>
+      </div></li>
+    </ol>
+  </section>
+
+  <section class="panel" id="install">
+    <h2>ติดตั้งครั้งแรก (โปรแกรมในเครื่อง)</h2>
+    <p class="sub">ทำครั้งเดียวต่อเครื่อง ใช้ Windows · ถ้าใช้แบบออนไลน์อย่างเดียว ข้ามส่วนนี้ได้</p>
+    <ol class="steps">
+      <li><div>
+        <p><b>ติดตั้ง Python 3</b> จาก <a href="https://www.python.org/downloads/">python.org/downloads</a></p>
+        <p class="note">หน้าแรกของตัวติดตั้ง <span class="warn">ติ๊ก ☑ Add python.exe to PATH</span> ก่อนกด Install Now</p>
+      </div></li>
+      <li><div>
+        <p><b>ดาวน์โหลดโปรแกรม</b> กดปุ่ม “ดาวน์โหลดโปรแกรม (ZIP)” ด้านบน</p>
+        <p class="note">คลิกขวาที่ไฟล์ ZIP → Extract All แล้วเก็บโฟลเดอร์ไว้ที่ไหนก็ได้ เช่น Documents</p>
+      </div></li>
+      <li><div>
+        <p><b>รันครั้งแรกต้องต่ออินเทอร์เน็ต</b></p>
+        <p class="note">โปรแกรมจะติดตั้งไลบรารีที่ต้องใช้ (pandas, xlrd, openpyxl) ให้เองอัตโนมัติ</p>
+      </div></li>
+    </ol>
+  </section>
+
+  <section class="panel" id="use">
+    <h2>ใช้งานทุกครั้ง</h2>
+    <ol class="steps">
+      <li><div>
+        <p><b>วางไฟล์ในโฟลเดอร์ <code>input</code></b></p>
+        <p class="note">ลบไฟล์งานเก่าออกก่อน แล้ววางไฟล์ MMAN (.txt) และรายการ STATUS (.xls/.xlsx/.csv) อย่างละ 1 ไฟล์ ไฟล์ผลลัพธ์จะไปอยู่ในโฟลเดอร์ output</p>
+      </div></li>
+      <li><div>
+        <p><b>ดับเบิลคลิก <code>run-mman.bat</code></b></p>
+      </div></li>
+      <li><div>
+        <p><b>ตอบคำถามบนหน้าจอดำ</b> แต่ละข้อกด Enter ข้ามได้</p>
+        <p class="note">เริ่มต้นเก็บ B/L / ถึง B/L (Enter ทั้งสองข้อ = ไม่ตัด) · POD <code>THLCH</code> / <code>THBKK</code> / <code>THUCT</code> (Enter = THLCH) · SHED NO. B/L ที่มี Status และ B/L อื่น (Enter = ค่าตาม POD: THLCH 2813 · THBKK 0145 / 0122) · ช่อง B/L อื่นพิมพ์ <code>=</code> = ใช้ค่าเดียวกับช่องแรก</p>
+      </div></li>
+      <li><div>
+        <p><b>เปิดผลที่ <code>output\MMAN_LCH.txt</code></b> (หรือ MMAN_BKK.txt / MMAN_UCT.txt ตาม POD)</p>
+        <p class="note">หน้าจอดำสรุปจำนวน B/L, Status ที่เปลี่ยน และ PG→PX ให้ ถ้ามีบรรทัด <code>WARNING</code> ให้อ่านก่อนใช้ไฟล์</p>
+      </div></li>
+    </ol>
+  </section>
+
+  <section class="panel" id="list">
+    <h2>รายการ STATUS (Excel)</h2>
+    <p class="sub">ใช้แค่คอลัมน์ A–C แถวแรกเป็นหัวตาราง คอลัมน์ D–F ไม่ต้องสนใจ โปรแกรมหาคอลัมน์จากชื่อหัวตาราง จึงใช้ได้ทั้งสองแบบฟอร์ม</p>
+    <div class="split">
+      <div>
+        <h3>แบบฟอร์ม SUR</h3>
+        <div class="sheet-scroll">
+          <table class="sheet">
+            <thead><tr><th class="col">A</th><th class="col">B</th><th class="col">C</th></tr>
+              <tr><th>POL</th><th>Status</th><th>B/L No.</th></tr></thead>
+            <tbody>
+              <tr><td>CNSHA</td><td class="y">7  N</td><td>HASLC…909702</td></tr>
+              <tr><td>CNSHA</td><td></td><td>HASLC…909850</td></tr>
+              <tr><td>KRPTK</td><td></td><td>HASLK…804417</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div>
+        <h3>แบบฟอร์ม KMBK</h3>
+        <div class="sheet-scroll">
+          <table class="sheet">
+            <thead><tr><th class="col">A</th><th class="col">B</th><th class="col">C</th></tr>
+              <tr><th>B/L No.</th><th>Status</th><th>POL</th></tr></thead>
+            <tbody>
+              <tr><td>HASLK…700462</td><td class="y">9  N</td><td>KRPUS</td></tr>
+              <tr><td>HASLK…805808</td><td></td><td>KRPUS</td></tr>
+              <tr><td>HASLK…807609</td><td></td><td>KRKAN</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <p class="caption">ตัวอย่างประกอบเท่านั้น เลข B/L ย่อไว้</p>
+    <ul class="check-list">
+      <li><b>B/L No.</b> ใส่เลข B/L หลัก ครอบคลุม sub-B/L ด้วย (…462A, …462B)</li>
+      <li><b>Status</b> เช่น <code>9  N</code>, <code>7  N</code> พิมพ์ช่องว่างกี่ช่องก็ได้ (<code>7 N</code>, <code>7N</code>) โปรแกรมจัดให้ถูกตำแหน่งเอง · ช่องว่าง = คง Status เดิม</li>
+      <li><b>POL</b> 5 ตัว เช่น <code>KRPUS</code>, <code>CNSHA</code></li>
+    </ul>
+  </section>
+
+  <section class="panel" id="changes">
+    <h2>สิ่งที่เปลี่ยนในไฟล์ MMAN</h2>
+    <p class="sub">แก้เฉพาะตำแหน่งที่กำหนด ขนาดไฟล์และการขึ้นบรรทัดคงเดิมทุกไบต์</p>
+    <div class="line-scroll">
+<pre class="mline"><span class="lab">ก่อน</span>HASLK01260700462                             THBKK    GOLDWAY…   TH   …   O ACRYLONITRILE…
+<span class="lab">หลัง</span>HASLK01260700462                   <mark class="b">KRPUS</mark><mark class="g">THBKK</mark>THBKK<mark class="o">0145</mark>GOLDWAY…   <mark class="b">KR</mark>   …   O ACRYLONITRILE…
+<span class="lab">ก่อน</span>SKHU9545854      8  N   1        Y
+<span class="lab">หลัง</span>SKHU9545854      <mark class="y">9</mark>  N   1        Y</pre>
+    </div>
+    <div class="trouble-scroll">
+      <table class="rules">
+        <thead><tr><th>#</th><th>ตำแหน่ง</th><th>ค่าที่ใส่</th></tr></thead>
+        <tbody>
+          <tr><td><span class="chip b">1</span></td><td class="pos">col 36–40</td><td>POL จากรายการ เช่น KRPUS</td></tr>
+          <tr><td><span class="chip g">2</span></td><td class="pos">col 41–45</td><td>ท่าเรือของ B/L ส่วนใหญ่ในไฟล์ (THBKK หรือ THLCH) เช่น CNTAO<b>THLCH</b>THLKR0332</td></tr>
+          <tr><td><span class="chip">3</span></td><td class="pos">col 46–50</td><td>ท่าเรือตามต้นฉบับ (THBKK, THLCH, THLKR, …) ไม่แก้</td></tr>
+          <tr><td><span class="chip g">POD</span></td><td class="pos">col 41–50</td><td>เลือก POD <b>THUCT</b> (ไฟล์มาเป็น THBKK) = ทุก B/L เป็น <b>THUCTTHUCT</b> และ SHED 0113 · THLCH / THBKK = ตามข้อ 2–3 (ล็อคไว้)</td></tr>
+          <tr><td><span class="chip o">4</span></td><td class="pos">col 51–54</td><td>SHED NO. ล็อคตามท่าต้นฉบับ: <b>BMT 0110 · SCT 0302 · LKR 0332 · UCT 0113 · LCH ที่เป็น DG (มี UN/CLASS) 2826 · BKK ที่ไป LAOS 0124</b> · BKK และ LCH อื่นๆ ตามช่อง SHED NO. (ช่องซ้าย = B/L ที่มี Status, ช่องขวา = B/L อื่น · ค่าตาม POD: THLCH <code>2813</code> · THBKK <code>0145</code> / <code>0122</code> · ช่องขวาว่าง = ใช้ค่าช่องซ้าย)</td></tr>
+          <tr><td><span class="chip b">5</span></td><td class="pos">col 844–845</td><td>อักษร 2 ตัวแรกของ POL แทน TH (KR, CN)</td></tr>
+          <tr><td><span class="chip y">6</span></td><td class="pos">บรรทัดตู้</td><td>Status ตามรายการ เช่น 8&nbsp;&nbsp;N → 9&nbsp;&nbsp;N</td></tr>
+          <tr><td><span class="chip r">PX</span></td><td class="pos">หน่วยหีบห่อ</td><td>PG → PX ทุก B/L</td></tr>
+          <tr><td><span class="chip b">5</span></td><td class="pos">col 3804</td><td>ตัวอักษร O หน้า description → <b>5 เฉพาะ B/L ที่ Status 9&nbsp;&nbsp;N</b> · B/L อื่น O คงเดิม · ยกเว้น TRANSIT/TRANSHIPMENT ใช้ 7 / 3 / L</td></tr>
+          <tr><td><span class="chip g">N</span></td><td class="pos">col 881 · 974 · 1765</td><td>ชื่อ consignee และชื่อ notify = ตามชื่อ notify ที่ <b>col 1672 (TH+ชื่อ) เสมอ เว้นวรรค 1 เคาะ</b> ทุก B/L (BKK และ LCH) · ที่อยู่ต่อท้ายชื่อคงไว้ · ยกเว้น TRANSIT/TRANSHIPMENT ห้ามแก้ คงเดิม</td></tr>
+          <tr><td><span class="chip y">T</span></td><td class="pos">col 1670 · 3804</td><td><b>TRANSIT/TRANSHIPMENT</b>: TH หน้าชื่อ notify = ประเทศปลายทาง (LA, MM, KH, CN, PG, MY) · ตัวอักษรหน้า description: TRANSIT = 7, TRANSIT ไป LAOS = ตาม CARGO MOVEMENT (L / 7), TRANSHIPMENT = 3</td></tr>
+          <tr><td><span class="chip">−</span></td><td class="pos">col 1742 · 1416 · 2207</td><td>ทุก B/L ยกเว้น TRANSIT/TRANSHIPMENT: ลบเลขภาษี notify และที่อยู่ consignee / notify (เลขภาษี consignee และรหัสสาขาคงไว้)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="split">
+      <div>
+        <h3>คงเดิมเสมอ</h3>
+        <ul class="check-list">
+          <li>ตัวอักษร <code>O</code> หน้า description (ยกเว้น TRANSIT/TRANSHIPMENT)</li>
+          <li>ชื่อของ B/L TRANSIT/TRANSHIPMENT</li>
+          <li>Status ของ B/L ที่ช่อง Status ว่าง</li>
+          <li>B/L ที่ไม่อยู่ในรายการ (แจ้งเตือนให้)</li>
+          <li>ไฟล์ต้นฉบับใน input ไม่ถูกแก้</li>
+        </ul>
+      </div>
+      <div>
+        <h3>สรุปผลที่ต้องดูทุกครั้ง</h3>
+        <ul class="check-list">
+          <li>จำนวน B/L ที่แก้ ตรงกับจำนวนในรายการ</li>
+          <li>จำนวน B/L ตาม SHED แต่ละเลข</li>
+          <li>Status ที่เปลี่ยน และจำนวนบรรทัดตู้</li>
+          <li>B/L ที่เปลี่ยน PG → PX</li>
+          <li>จำนวนบรรทัดที่ตัดออก และช่วง B/L ที่เก็บไว้</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="claude">
+    <h2>ใช้กับ Claude Code</h2>
+    <p class="sub">สำหรับคนที่ใช้ Claude Code อยู่แล้ว ติดตั้ง skill ครั้งเดียว แล้วสั่งงานด้วยคำว่า mman vn / Change status</p>
+    <div class="cmd">
+      <pre id="clone">git clone https://github.com/Rattanao/5-mman-vnsgn.git %TEMP%\mmanvn &amp;&amp; xcopy /E /I /Y %TEMP%\mmanvn\skill\mman-vn %USERPROFILE%\.claude\skills\mman-vn &amp;&amp; xcopy /I /Y %TEMP%\mmanvn\*.py %USERPROFILE%\.claude\skills\mman-vn\scripts</pre>
+      <button type="button" data-target="clone">คัดลอก</button>
+    </div>
+    <p class="note">เปิด Claude Code ใหม่ ไปที่โฟลเดอร์งานที่มี input แล้วพิมพ์ เช่น “ทำ mman vn เริ่มต้นเก็บ BL HASLS21260801066 ถึง BL HASLS21260801762 POD THBKK” หรือ “Change status” (ไม่ตัด)</p>
+  </section>
+
+  <section class="panel" id="help">
+    <h2>ถ้าเจอปัญหา</h2>
+    <div class="trouble-scroll">
+      <table class="trouble">
+        <thead><tr><th>ข้อความ / อาการ</th><th>วิธีแก้</th></tr></thead>
+        <tbody>
+          <tr><td>ไม่พบ Python / Python was not found</td><td>ติดตั้ง Python ใหม่ และติ๊ก Add python.exe to PATH</td></tr>
+          <tr><td>ERROR: need exactly 1 MMAN_*.txt / list file</td><td>ใน input ต้องมีไฟล์ MMAN 1 ไฟล์ และรายการ STATUS 1 ไฟล์ ลบไฟล์งานเก่าออก</td></tr>
+          <tr><td>ERROR: no B/L in the MMAN file matches the list</td><td>รายการ STATUS ไม่ใช่ของเรือลำนี้ ตรวจว่าใช้ไฟล์คู่กันถูก</td></tr>
+          <tr><td>WARNING B/L NOT in list</td><td>B/L ในไฟล์ MMAN ที่ไม่มีในรายการ จะไม่ถูกแก้ เพิ่มในรายการแล้วรันใหม่</td></tr>
+          <tr><td>ERROR: unrecognised Status</td><td>ช่อง Status ต้องเป็นตัวเลข 1 ตัว + ตัวอักษร 1 ตัว เช่น 9  N</td></tr>
+          <tr><td>PermissionError: [Errno 13]</td><td>ปิดไฟล์ผลลัพธ์ (MMAN_LCH.txt ฯลฯ) ที่เปิดค้างไว้ แล้วรันใหม่</td></tr>
+          <tr><td>ERROR: start B/L … / end B/L … not found</td><td>เลข B/L ที่พิมพ์ไม่มีในไฟล์ MMAN ตรวจเลข B/L อีกครั้ง</td></tr>
+          <tr><td>ไม่พบ B/L เริ่มต้น … / ไม่พบ B/L … ในไฟล์ MMAN</td><td>พิมพ์เลข B/L ให้ตรงกับในไฟล์ MMAN (B/L หลัก ไม่ต้องใส่ A, B ท้าย) และ “ถึง B/L” ต้องอยู่หลัง B/L เริ่มต้น</td></tr>
+          <tr><td>หน้าเว็บยังเป็นแบบเก่า</td><td>กด Ctrl + F5</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <p class="credit">Project by <b>Ms. Rattana Mudlae</b> · Position Import DOC.</p>
+    <p>ตรวจสรุปผลทุกครั้งก่อนส่งไฟล์ โดยเฉพาะบรรทัด WARNING</p>
+    <p>อัปเดตโปรแกรม: ดาวน์โหลด ZIP ใหม่แล้วแตกทับโฟลเดอร์เดิม · ดูโค้ดที่ <a href="https://github.com/Rattanao/5-mman-vnsgn">github.com/Rattanao/5-mman-vnsgn</a></p>
+  </footer>
+</div>
+
+<script>
+document.querySelectorAll('button[data-target]').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var el = document.getElementById(btn.dataset.target);
+    var text = el.textContent;
+    var done = function () { btn.textContent = 'คัดลอกแล้ว'; setTimeout(function () { btn.textContent = 'คัดลอก'; }, 1600); };
+    var fallback = function () {
+      var r = document.createRange(); r.selectNodeContents(el);
+      var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+      btn.textContent = 'กด Ctrl+C';
+    };
+    try { navigator.clipboard.writeText(text).then(done, fallback); } catch (e) { fallback(); }
+  });
+});
+</script>
+</body>
+</html>
